@@ -42,6 +42,7 @@ export function CalculoSubneteo({ onResult, onContinue, saving, note }: Exercise
   }
 
   const cls = (ok: boolean | undefined) => (res ? (ok ? ' ok' : ' no') : '')
+  const empty = !Object.values(top).some((v) => v.trim()) && !rows.some((r) => r.some((v) => v.trim()))
   const perfect = !!res && res.correct === res.total
   const other = { label: 'Otro ejercicio', onClick: again }
 
@@ -93,7 +94,7 @@ export function CalculoSubneteo({ onResult, onContinue, saving, note }: Exercise
       )}
 
       {!res ? (
-        <CheckBar sub="Llena los 16 campos" label="Comprobar" onClick={check} other={other} note={note} />
+        <CheckBar sub="Llena los 16 campos" label="Comprobar" disabled={empty} onClick={check} other={other} note={note} />
       ) : (
         <CheckBar
           tone={perfect ? 'ok' : 'no'}

@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, exists, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { exercises, lessonCompletions, lessons, subjects, units } from '@/db/schema'
 import { computeNodeStates, type NodeState } from '@/lib/path'
@@ -18,7 +18,13 @@ export async function getSubjectPath(subjectId: string) {
     .select({ lesson: lessons })
     .from(lessons)
     .innerJoin(units, eq(lessons.unitId, units.id))
-    .where(eq(units.subjectId, subjectId))
+    // Solo lecciones con >=1 ejercicio activo: una vacía sería la "actual" (y /leccion daría 404), bloqueando el camino.
+    .where(
+      and(
+        eq(units.subjectId, subjectId),
+        exists(db.select({ one: exercises.id }).from(exercises).where(and(eq(exercises.lessonId, lessons.id), isNull(exercises.retiredAt)))),
+      ),
+    )
   const done = new Set((await db.select({ id: lessonCompletions.lessonId }).from(lessonCompletions)).map((r) => r.id))
 
   // Orden de la materia entero: la lección "actual" es la primera sin completar de todo el camino.

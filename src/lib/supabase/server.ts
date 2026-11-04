@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { isOwner } from '@/lib/owner'
 
 export async function createServerSupabase() {
   const cookieStore = await cookies()
@@ -26,6 +27,6 @@ export async function createServerSupabase() {
 export async function requireUser() {
   const supabase = await createServerSupabase()
   const { data } = await supabase.auth.getClaims()
-  if (!data?.claims) redirect('/login')
+  if (!data?.claims || !isOwner(data.claims.email)) redirect('/login')
   return data.claims
 }

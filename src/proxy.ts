@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { isOwner } from '@/lib/owner'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
@@ -20,7 +21,7 @@ export async function proxy(request: NextRequest) {
 
   // getClaims valida el JWT (y refresca la sesión); no usar getSession para proteger.
   const { data } = await supabase.auth.getClaims()
-  if (!data?.claims && request.nextUrl.pathname !== '/login') {
+  if ((!data?.claims || !isOwner(data.claims.email)) && request.nextUrl.pathname !== '/login') {
     return NextResponse.redirect(new URL('/login', request.url))
   }
   return response

@@ -15,7 +15,7 @@ import './leccion.css'
 
 type Ex = { id: string; conceptId: string | null; source: Source | null; payload: ExercisePayload }
 
-export function LessonPlayer({ lessonId, subjectId, exercises }: { lessonId: string; subjectId: string; exercises: Ex[] }) {
+export function LessonPlayer({ lessonId, subjectId, exercises, streak }: { lessonId: string; subjectId: string; exercises: Ex[]; streak: number }) {
   const router = useRouter()
   const [i, setI] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -71,6 +71,7 @@ export function LessonPlayer({ lessonId, subjectId, exercises }: { lessonId: str
         <div className="prog" role="progressbar" aria-label="Progreso de la lección" aria-valuemin={0} aria-valuemax={exercises.length} aria-valuenow={i}>
           {exercises.map((e, j) => <span key={e.id} className={j < i ? 'done' : j === i ? 'on' : undefined} />)}
         </div>
+        <span className="streak"><span aria-hidden="true">🔥 {streak}</span><span className="sr">Racha: {streak} {streak === 1 ? 'día' : 'días'}</span></span>
       </header>
       <main className="stage">
         <div key={ex.id} className={`ex${kb ? '' : ' enter'}`}>

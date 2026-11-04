@@ -16,6 +16,7 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
   const { subject, units } = path
 
   const next = units.flatMap((u) => u.lessons).find((l) => l.state === 'current')
+  const last = units.flatMap((u) => u.lessons).at(-1)
   const summary = next ? await getLessonSummary(next.lesson.id) : null
   const currentUnit = units.find((u) => u.lessons.some((l) => l.state === 'current')) ?? units[0]
 
@@ -86,7 +87,10 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
               <Link className="cta" href={`/leccion/${next.lesson.id}`}>Empezar lección</Link>
             </>
           ) : (
-            <p className="next-title">Nada pendiente por ahora</p>
+            <>
+              <p className="next-title">Nada pendiente por ahora</p>
+              {last && <Link className="cta" href={`/leccion/${last.lesson.id}`}>Repetir: {last.lesson.title}</Link>}
+            </>
           )}
         </div>
       </aside>

@@ -4,6 +4,7 @@
 .lesson .top{display:flex;align-items:center;gap:16px;padding:22px 40px}
 .lesson .x{width:44px;height:44px;margin:-8px;display:grid;place-items:center;font-size:22px;color:var(--mute);text-decoration:none;border-radius:50%;transition:transform 120ms var(--ease)}
 .lesson .x:active{transform:scale(.9)}
+.lesson .streak{font-weight:800;font-size:16px;color:var(--durazno-d);white-space:nowrap}
 .lesson .prog{flex:1;display:flex;gap:6px}
 .lesson .prog span{flex:1;height:14px;border-radius:99px;background:#E2DCEF;position:relative;overflow:hidden}
 .lesson .prog span::after{content:"";position:absolute;inset:0;background:var(--lila-d);border-radius:99px;transform:scaleX(0);transform-origin:left;transition:transform 240ms var(--ease)}

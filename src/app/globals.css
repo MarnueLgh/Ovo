@@ -14,3 +14,9 @@ body{font-family:var(--font-rubik),Rubik,system-ui,sans-serif;background:var(--b
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}
 }
+
+.nf{min-height:100dvh;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center}
+.nf h1{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.nf p{color:var(--mute)}
+.nf a{background:var(--ink);color:#fff;border-radius:999px;padding:13px 24px;font-weight:700;text-decoration:none}
+.nf a:focus-visible{outline:3px solid var(--lila-d);outline-offset:3px}

@@ -87,6 +87,7 @@ export function Relacionar({ payload: p, onResult, onContinue, saving, note }: E
 
   function startDrag(e: React.PointerEvent, i: number) {
     if (connected.current.has(i) || e.button !== 0) return
+    stopDrag.current?.() // cierra un arrastre previo (otro puntero) para no filtrar listeners
     e.preventDefault()
     const path = dragRef.current!
     const a = center(lp.current[i]!)

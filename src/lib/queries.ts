@@ -1,9 +1,10 @@
-import { and, asc, eq, exists, isNull } from 'drizzle-orm'
+import { and, asc, count, eq, exists, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { exercises, lessonCompletions, lessons, subjects, units } from '@/db/schema'
+import { attempts, exercises, lessonCompletions, lessons, subjects, units } from '@/db/schema'
 import { computeNodeStates, type NodeState } from '@/lib/path'
 import { computeStreak } from '@/lib/streak'
 import { toLocalDay } from '@/lib/time'
+import { pickVariants } from '@/lib/content/variants'
 import { parsePayload } from '@/lib/exercises/types'
 import { isUuid } from '@/lib/uuid'
 
@@ -49,13 +50,27 @@ export async function getStreak() {
   return computeStreak(rows.map((r) => toLocalDay(r.at)), toLocalDay(new Date()))
 }
 
-/** Tipos de ejercicio (sin repetir, en orden de posición) y total de una lección. */
-export async function getLessonSummary(lessonId: string) {
+/** Ejercicios activos de la lección que una partida mostraría: una variante por grupo (la menos intentada). */
+async function pickedExercises(lessonId: string) {
   const rows = await db
-    .select({ kind: exercises.kind })
+    .select()
     .from(exercises)
     .where(and(eq(exercises.lessonId, lessonId), isNull(exercises.retiredAt)))
     .orderBy(asc(exercises.position))
+  if (rows.length === 0) return rows
+  const counts = await db
+    .select({ id: attempts.exerciseId, n: count() })
+    .from(attempts)
+    .innerJoin(exercises, eq(attempts.exerciseId, exercises.id))
+    .where(eq(exercises.lessonId, lessonId))
+    .groupBy(attempts.exerciseId)
+  const seen = new Map(counts.map((c) => [c.id, c.n]))
+  return pickVariants(rows.map((r) => ({ ...r, group: r.variantGroup })), seen)
+}
+
+/** Tipos de ejercicio (sin repetir, en orden de posición) y total de lo que mostraría una partida. */
+export async function getLessonSummary(lessonId: string) {
+  const rows = await pickedExercises(lessonId)
   return { kinds: [...new Set(rows.map((r) => r.kind))], count: rows.length }
 }
 
@@ -68,11 +83,7 @@ export async function getLessonForPlay(lessonId: string) {
     .innerJoin(units, eq(lessons.unitId, units.id))
     .where(eq(lessons.id, lessonId))
   if (!row) return null
-  const rows = await db
-    .select()
-    .from(exercises)
-    .where(and(eq(exercises.lessonId, lessonId), isNull(exercises.retiredAt)))
-    .orderBy(asc(exercises.position))
+  const rows = await pickedExercises(lessonId)
   if (rows.length === 0) return null
   return {
     title: row.lesson.title,

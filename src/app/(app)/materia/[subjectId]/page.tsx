@@ -6,7 +6,7 @@ import { StreakTile } from '@/components/StreakTile'
 import { getLessonSummary, getStreak, getSubjectPath, getSubjects } from '@/lib/queries'
 import { requireUser } from '@/lib/supabase/server'
 
-const KIND_LABEL: Record<string, string> = { dato_clave: 'Dato clave', relacionar: 'Relacionar', caso_practico: 'Caso práctico', calculo: 'Cálculo' }
+const KIND_LABEL: Record<string, string> = { dato_clave: 'Dato clave', relacionar: 'Relacionar', caso_practico: 'Caso práctico', calculo: 'Cálculo', abierta: 'Respuesta abierta' }
 
 async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
   const { subjectId } = await params

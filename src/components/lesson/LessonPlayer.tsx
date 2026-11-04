@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { completeLesson, recordAttempt } from '@/app/(lesson)/leccion/[lessonId]/actions'
 import { newAttemptId } from '@/lib/exercises/grade'
 import type { ExercisePayload, Source } from '@/lib/exercises/types'
+import { Abierta } from './Abierta'
 import { CalculoSubneteo } from './CalculoSubneteo'
 import { CasoPractico } from './CasoPractico'
 import type { ExerciseResult } from './CheckBar'
@@ -15,18 +16,20 @@ import './leccion.css'
 
 type Ex = { id: string; conceptId: string | null; source: Source | null; payload: ExercisePayload }
 
-export function LessonPlayer({ lessonId, subjectId, exercises, streak }: { lessonId: string; subjectId: string; exercises: Ex[]; streak: number }) {
+export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { lessonId: string; subjectId: string; exercises: Ex[]; streak: number }) {
   const router = useRouter()
   const [i, setI] = useState(0)
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [kb, setKb] = useState(false)
+  const [exercises, setExercises] = useState(all) // sin los reportados en esta partida
   const attemptIds = useRef(new Map<string, string>()) // un id por ejercicio, estable ante doble clic/reintentos
   const sent = useRef(new Set<string>())
   const startedAt = useRef(0)
   const changedAt = useRef(0) // ignora un doble clic que saltaría el siguiente ejercicio
   const finishing = useRef(false)
   useEffect(() => { startedAt.current = Date.now() }, [i])
+
 
   const ex = exercises[i]
 
@@ -42,14 +45,7 @@ export function LessonPlayer({ lessonId, subjectId, exercises, streak }: { lesso
       .finally(() => setSaving(false))
   }
 
-  async function onContinue(viaKeyboard: boolean) {
-    if (finishing.current || Date.now() - changedAt.current < 300) return
-    setKb(viaKeyboard)
-    setNote(null)
-    if (i < exercises.length - 1) {
-      changedAt.current = Date.now()
-      return setI(i + 1)
-    }
+  async function finish() {
     finishing.current = true
     setSaving(true)
     try {
@@ -60,6 +56,17 @@ export function LessonPlayer({ lessonId, subjectId, exercises, streak }: { lesso
       finishing.current = false
       setSaving(false)
     }
+  }
+
+  async function onContinue(viaKeyboard: boolean) {
+    if (finishing.current || Date.now() - changedAt.current < 300) return
+    setKb(viaKeyboard)
+    setNote(null)
+    if (i < exercises.length - 1) {
+      changedAt.current = Date.now()
+      return setI(i + 1)
+    }
+    await finish()
   }
 
   const props = { source: ex.source, onResult, onContinue, saving, note }
@@ -77,6 +84,7 @@ export function LessonPlayer({ lessonId, subjectId, exercises, streak }: { lesso
         <div key={ex.id} className={`ex${kb ? '' : ' enter'}`}>
           {p.kind === 'dato_clave' ? <DatoClave payload={p} {...props} />
             : p.kind === 'relacionar' ? <Relacionar payload={p} {...props} />
+            : p.kind === 'abierta' ? <Abierta payload={p} {...props} />
             : p.kind === 'caso_practico' ? <CasoPractico payload={p} {...props} />
             : <CalculoSubneteo payload={p} {...props} />}
         </div>

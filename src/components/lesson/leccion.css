@@ -126,3 +126,18 @@
   .lesson .btn{padding:12px 20px;flex:1}
   .lesson .explain{width:calc(100% - 32px);margin-left:calc((100% - 32px) / -2);bottom:150px;max-height:calc(100dvh - 240px)}
 }
+
+/* respuesta abierta */
+.lesson .sr-lbl{display:block;font-size:12.5px;font-weight:600;color:var(--mute);margin:14px 0 6px}
+.lesson .area{width:100%;min-height:112px;resize:vertical;border:2px solid var(--line);border-radius:18px;background:#fff;padding:14px 16px;font:500 16px/1.5 var(--font-rubik),Rubik,sans-serif;color:var(--ink)}
+.lesson .area:focus-visible{outline:3px solid var(--lila-d);outline-offset:1px}
+.lesson .area[readonly]{background:#F6F3FC}
+.lesson .model{background:#fff;border:2px solid var(--line);border-radius:22px;padding:18px 20px;margin-top:16px;animation:pop 200ms var(--ease)}
+.lesson .model h2{font-size:17px;margin-bottom:8px}
+.lesson .model p{font-size:14.5px;line-height:1.55}
+.lesson .model fieldset{border:0;margin:14px 0 0;padding:0;min-width:0}
+.lesson .model legend{font-size:13px;font-weight:700;color:var(--lila-d);margin-bottom:6px;padding:0}
+.lesson .kp{display:flex;gap:12px;align-items:center;min-height:44px;font-size:15px;font-weight:600;cursor:pointer}
+.lesson .kp input{width:22px;height:22px;flex:none;accent-color:var(--lila-d)}
+.lesson .kp input:focus-visible{outline:3px solid var(--lila-d);outline-offset:2px}
+

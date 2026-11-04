@@ -16,7 +16,16 @@ import './leccion.css'
 
 type Ex = { id: string; conceptId: string | null; source: Source | null; payload: ExercisePayload }
 
-export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { lessonId: string; subjectId: string; exercises: Ex[]; streak: number }) {
+type Props = { lessonId: string; subjectId: string; exercises: Ex[]; streak: number }
+
+/** Next 16 (cacheComponents) conserva la página oculta con <Activity>: sin este key, volver a abrir la lección
+ *  mostraba la partida anterior. bfcacheId cambia en cada navegación nueva (Link/push) y se mantiene con atrás/adelante. */
+export function LessonPlayer(props: Props) {
+  const { bfcacheId } = useRouter()
+  return <LessonRun key={bfcacheId} {...props} />
+}
+
+function LessonRun({ lessonId, subjectId, exercises: all, streak }: Props) {
   const router = useRouter()
   const [i, setI] = useState(0)
   const [saving, setSaving] = useState(false)

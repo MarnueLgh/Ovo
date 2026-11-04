@@ -4,6 +4,7 @@ import { exercises, lessonCompletions, lessons, subjects, units } from '@/db/sch
 import { computeNodeStates, type NodeState } from '@/lib/path'
 import { computeStreak } from '@/lib/streak'
 import { toLocalDay } from '@/lib/time'
+import { parsePayload } from '@/lib/exercises/types'
 import { isUuid } from '@/lib/uuid'
 
 export const getSubjects = () => db.select().from(subjects).orderBy(asc(subjects.position))
@@ -50,4 +51,26 @@ export async function getLessonSummary(lessonId: string) {
     .where(and(eq(exercises.lessonId, lessonId), isNull(exercises.retiredAt)))
     .orderBy(asc(exercises.position))
   return { kinds: [...new Set(rows.map((r) => r.kind))], count: rows.length }
+}
+
+/** Lección con sus ejercicios activos (en orden) y la materia a la que regresar. null si no existe o no tiene ejercicios. */
+export async function getLessonForPlay(lessonId: string) {
+  if (!isUuid(lessonId)) return null
+  const [row] = await db
+    .select({ lesson: lessons, subjectId: units.subjectId })
+    .from(lessons)
+    .innerJoin(units, eq(lessons.unitId, units.id))
+    .where(eq(lessons.id, lessonId))
+  if (!row) return null
+  const rows = await db
+    .select()
+    .from(exercises)
+    .where(and(eq(exercises.lessonId, lessonId), isNull(exercises.retiredAt)))
+    .orderBy(asc(exercises.position))
+  if (rows.length === 0) return null
+  return {
+    title: row.lesson.title,
+    subjectId: row.subjectId,
+    exercises: rows.map((e) => ({ id: e.id, conceptId: e.conceptId, source: e.source, payload: parsePayload(e.payload) })),
+  }
 }

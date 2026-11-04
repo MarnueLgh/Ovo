@@ -1,0 +1,104 @@
+/* Todo bajo .lesson para no chocar con camino.css (.step, .tile...) */
+.lesson{--ok:#8DE2B0;--ok-d:#1D7A47;--ok-bg:#DDF6E7;--no:#FF9C7A;--no-d:#B43F14;--no-bg:#FFE3DA;--sol:#FFE07A;
+  min-height:100dvh;display:flex;flex-direction:column}
+.lesson .top{display:flex;align-items:center;gap:16px;padding:22px 40px}
+.lesson .x{width:44px;height:44px;margin:-8px;display:grid;place-items:center;font-size:22px;color:var(--mute);text-decoration:none;border-radius:50%;transition:transform 120ms var(--ease)}
+.lesson .x:active{transform:scale(.9)}
+.lesson .prog{flex:1;display:flex;gap:6px}
+.lesson .prog span{flex:1;height:14px;border-radius:99px;background:#E2DCEF;position:relative;overflow:hidden}
+.lesson .prog span::after{content:"";position:absolute;inset:0;background:var(--lila-d);border-radius:99px;transform:scaleX(0);transform-origin:left;transition:transform 240ms var(--ease)}
+.lesson .prog .done::after,.lesson .prog .on::after{transform:scaleX(1)}
+.lesson .prog .on::after{background:var(--lila)}
+.lesson .stage{flex:1;display:grid;place-items:start center;padding:10px 40px 150px}
+.lesson .ex{width:min(760px,100%);min-width:0}
+/* animar los hijos, no .ex: un transform en .ex volvería su contenedor a la barra fija */
+.lesson .ex.enter>:not(.bar):not(.explain){opacity:0;transform:translateY(10px);animation:rise 240ms var(--ease) forwards}
+.lesson .kind{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;font-weight:700;color:var(--lila-d);background:#EDE5FC;padding:5px 12px;border-radius:99px;margin-bottom:12px}
+.lesson h1{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-bottom:6px;text-wrap:balance}
+.lesson .lead{color:var(--mute);font-size:15px;margin-bottom:22px}
+.lesson .src{font-size:12px;color:var(--mute);margin-top:16px}
+
+/* dato clave */
+.lesson .vs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.lesson .card{border-radius:24px;padding:20px}
+.lesson .card h2{font-size:19px;font-weight:800;margin-bottom:8px}
+.lesson .card ul{padding-left:18px;font-size:14.5px;line-height:1.6}
+.lesson .trick{margin-top:14px;background:var(--sol);border-radius:24px;padding:18px 20px;display:flex;gap:14px;align-items:center;font-size:16px;font-weight:600}
+.lesson .trick b{font-size:22px;font-weight:800;display:block}
+.lesson .trick .emo{font-size:34px}
+
+/* relacionar */
+.lesson .match{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:120px;user-select:none;-webkit-user-select:none}
+.lesson .col{display:flex;flex-direction:column;gap:12px}
+.lesson .it{background:#fff;border:2px solid var(--line);border-radius:18px;padding:14px 16px;font:600 14.5px var(--font-rubik),Rubik,sans-serif;color:var(--ink);text-align:left;position:relative;min-height:62px;display:flex;align-items:center;width:100%}
+.lesson .it.ok{border-color:var(--ok-d);background:var(--ok-bg)}
+.lesson .bad-a{animation:shake-a 320ms ease}
+.lesson .bad-b{animation:shake-b 320ms ease}
+@keyframes shake-a{0%,100%{border-color:var(--no-d)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes shake-b{0%,100%{border-color:var(--no-d)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.lesson .plug{position:absolute;top:50%;width:22px;height:22px;margin-top:-11px;padding:0;border-radius:50%;background:var(--ink);border:4px solid #fff;box-shadow:0 0 0 2px var(--ink);cursor:grab;touch-action:none;transition:transform 160ms var(--ease)}
+.lesson .plug::before{content:"";position:absolute;inset:-12px;border-radius:50%} /* zona táctil de 46px */
+.lesson .L .plug{right:-12px}
+.lesson .R .plug{left:-12px;cursor:default;background:#fff}
+.lesson .R .it{padding-left:26px}
+.lesson .plug.arm{transform:scale(1.25);background:var(--lila-d);box-shadow:0 0 0 2px var(--lila-d)}
+.lesson .it.ok .plug{background:var(--ok-d);box-shadow:0 0 0 2px var(--ok-d);cursor:default}
+@media (hover:hover){.lesson .L .plug:not(:disabled):hover{transform:scale(1.15)}}
+.lesson svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.lesson svg.wires path{fill:none;stroke-width:6;stroke-linecap:round}
+
+/* caso práctico */
+.lesson .scene{background:#fff;border-radius:22px;padding:16px 18px;margin-bottom:18px;font-size:14.5px;border:2px solid var(--line)}
+.lesson .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lesson .opt{background:#fff;border:2px solid var(--line);border-radius:18px;padding:18px;font:600 15.5px var(--font-rubik),Rubik,sans-serif;color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 4px 0 var(--line);transition:transform 120ms var(--ease)}
+.lesson .opt:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.lesson .opt:disabled{cursor:default}
+.lesson .opt.sel{border-color:var(--lila-d);box-shadow:0 4px 0 var(--lila-d);background:#F6F1FE}
+.lesson .opt.right{border-color:var(--ok-d);box-shadow:0 4px 0 var(--ok-d);background:var(--ok-bg)}
+.lesson .opt.wrong{border-color:var(--no-d);box-shadow:0 4px 0 var(--no-d);background:var(--no-bg)}
+
+/* barra inferior */
+.lesson .bar{position:fixed;left:0;right:0;bottom:0;padding:18px 40px max(18px,env(safe-area-inset-bottom));background:#fff;border-top:2px solid var(--line);display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px;z-index:2}
+.lesson .bar.ok{background:var(--ok-bg);border-color:var(--ok)}
+.lesson .bar.no{background:var(--no-bg);border-color:var(--no)}
+.lesson .msg{flex:1 1 160px;min-width:0}
+.lesson .msg:empty{display:none}
+.lesson .bar>.btn:last-child{margin-left:auto}
+.lesson .msg b{font-size:18px;font-weight:800;display:block}
+.lesson .msg span{font-size:14px;color:var(--mute);display:block}
+.lesson .msg .note{color:var(--no-d);font-size:13px}
+.lesson .bar.ok .msg b{color:var(--ok-d)}
+.lesson .bar.no .msg b{color:#A8380D}
+.lesson .btn{user-select:none;-webkit-user-select:none;border:0;border-radius:16px;padding:14px 26px;min-height:48px;font:800 15px var(--font-rubik),Rubik,sans-serif;cursor:pointer;color:#fff;background:var(--lila-d);box-shadow:0 4px 0 #5A35AE;transition:transform 120ms var(--ease)}
+.lesson .btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #5A35AE}
+.lesson .btn:disabled{background:#D9D4E6;color:#5D5675;box-shadow:0 4px 0 #B3ACC6;cursor:default}
+.lesson .bar.ok .btn{background:var(--ok-d);box-shadow:0 4px 0 #14573A}
+.lesson .bar.ok .btn:active:not(:disabled){box-shadow:0 1px 0 #14573A}
+.lesson .bar.ok .btn:disabled{background:#D9D4E6;color:#5D5675;box-shadow:0 4px 0 #B3ACC6}
+.lesson .bar.no .btn{background:var(--no-d);box-shadow:0 4px 0 #8A2F0E}
+.lesson .bar.no .btn:active:not(:disabled){box-shadow:0 1px 0 #8A2F0E}
+.lesson .bar.no .btn:disabled{background:#D9D4E6;color:#5D5675;box-shadow:0 4px 0 #B3ACC6}
+.lesson .bar .btn.why{background:#fff;color:#A8380D;box-shadow:0 4px 0 var(--no);border:2px solid var(--no)}
+.lesson .bar .btn.why:active{box-shadow:0 1px 0 var(--no)}
+
+.lesson .explain{position:fixed;left:50%;bottom:104px;width:min(760px,calc(100% - 80px));max-height:calc(100dvh - 190px);overflow:auto;margin-left:calc(min(760px,calc(100% - 80px)) / -2);background:#fff;border-radius:24px;padding:20px 22px;box-shadow:0 18px 40px -12px rgba(60,30,120,.3);border:2px solid var(--no);z-index:3;animation:pop 200ms var(--ease)}
+.lesson .explain.nokb{animation:none}
+@keyframes pop{from{opacity:0;transform:translateY(12px)}}
+.lesson .explain h2{font-size:17px;margin-bottom:8px}
+.lesson .explain p{font-size:14.5px;line-height:1.55;margin-bottom:8px}
+.lesson .explain .ans{background:var(--ok-bg);border-radius:12px;padding:10px 12px;font-weight:600;font-size:14px}
+.lesson .explain .src{margin-top:4px;margin-bottom:0}
+
+@media (max-width:600px){
+  .lesson .top{padding:16px}
+  .lesson .stage{padding:6px 16px 190px}
+  .lesson h1{font-size:24px}
+  .lesson .vs,.lesson .opts{grid-template-columns:1fr}
+  .lesson .match{gap:44px}
+  .lesson .it{padding:10px 12px;font-size:13.5px}
+  .lesson .R .it{padding-left:20px}
+  .lesson .bar{padding:14px 16px max(14px,env(safe-area-inset-bottom))}
+  .lesson .msg{flex-basis:100%}
+  .lesson .btn{padding:12px 20px;flex:1}
+  .lesson .explain{width:calc(100% - 32px);margin-left:calc((100% - 32px) / -2);bottom:150px;max-height:calc(100dvh - 240px)}
+}

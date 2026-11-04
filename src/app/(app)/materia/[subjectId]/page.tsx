@@ -1,0 +1,90 @@
+import { Suspense } from 'react'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { PathNode } from '@/components/PathNode'
+import { StreakTile } from '@/components/StreakTile'
+import { getStreak, getSubjectPath, getSubjects } from '@/lib/queries'
+import { requireUser } from '@/lib/supabase/server'
+
+async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
+  const { subjectId } = await params
+  await requireUser()
+  const [subjects, path, streak] = await Promise.all([getSubjects(), getSubjectPath(subjectId), getStreak()])
+  if (!path) notFound()
+  const { subject, units } = path
+
+  const next = units.flatMap((u) => u.lessons).find((l) => l.state === 'current')
+  const currentUnit = units.find((u) => u.lessons.some((l) => l.state === 'current')) ?? units[0]
+
+  return (
+    <div className="camino" style={{ '--c': subject.color } as React.CSSProperties}>
+      <main>
+        <div className="chips in">
+          {subjects.map((s) => (
+            <Link key={s.id} href={`/materia/${s.id}`} className={s.id === subject.id ? 'chip on' : 'chip'} aria-current={s.id === subject.id ? 'page' : undefined}>
+              {s.name}
+            </Link>
+          ))}
+        </div>
+        <div className="hero in" style={{ animationDelay: '40ms' }}>
+          <div className="hero-emoji" aria-hidden="true">{subject.emoji}</div>
+          <h1>{currentUnit ? `Unidad ${currentUnit.unit.number}` : 'Sin unidades'}</h1>
+        </div>
+
+        {units.map(({ unit, lessons }, ui) => {
+          const done = lessons.filter((l) => l.state === 'done').length
+          const complete = lessons.length > 0 && done === lessons.length
+          const active = lessons.some((l) => l.state === 'current')
+          const tone = complete ? 'u-done' : active ? 'u-now' : 'u-off'
+          const delay = { animationDelay: `${80 + ui * 60}ms` }
+          return (
+            <section key={unit.id} aria-labelledby={`u-${unit.id}`}>
+              <div className={`unit ${tone} in`} style={delay}>
+                <div>
+                  <h2 id={`u-${unit.id}`}>Unidad {unit.number} · {unit.title}</h2>
+                  <small>{lessons.length === 0 ? 'Sin material todavía' : complete ? 'Completada' : `${done} de ${lessons.length} lecciones`}</small>
+                </div>
+                <span aria-hidden="true">{complete ? '✓' : lessons.length === 0 ? '🔒' : ''}</span>
+              </div>
+              <div className="path">
+                {lessons.length === 0 ? (
+                  <div className="gate g-empty in" style={delay}>
+                    <span className="ic" aria-hidden="true">📥</span>
+                    <div><h3>Sube los PDFs de esta unidad</h3><p>Ovo arma las lecciones en cuanto los subas.</p></div>
+                  </div>
+                ) : (
+                  <>
+                    {lessons.map((l, i) => <PathNode key={l.lesson.id} index={i} state={l.state} lessonId={l.lesson.id} title={l.lesson.title} />)}
+                    <div className="gate g-lock in" style={delay}>
+                      <span className="ic" aria-hidden="true">🎯</span>
+                      <div><h3>Examen de unidad: próximamente</h3><p>Llegará con la fase 3.</p></div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </section>
+          )
+        })}
+      </main>
+
+      <aside className="rail" aria-label="Resumen">
+        <StreakTile current={streak.current} best={streak.best} />
+        <div className="tile t-cielo in" style={{ animationDelay: '180ms' }}>
+          <h2 className="k">Siguiente lección</h2>
+          {next ? (
+            <>
+              <p className="next-title">{next.lesson.title}</p>
+              <Link className="cta" href={`/leccion/${next.lesson.id}`}>Empezar lección</Link>
+            </>
+          ) : (
+            <p className="next-title">Nada pendiente por ahora</p>
+          )}
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+export default function Page({ params }: PageProps<'/materia/[subjectId]'>) {
+  return <Suspense fallback={null}><Camino params={params} /></Suspense>
+}

@@ -1,0 +1,25 @@
+{
+  "subject": "Telecomunicaciones I",
+  "unit": { "number": 99, "title": "Fixture de prueba" },
+  "files": [{ "name": "Tema99.pdf", "kind": "pdf" }],
+  "concepts": [{ "key": "osi", "name": "Modelo OSI" }, { "key": "transporte", "name": "Capa de transporte" }],
+  "lessons": [
+    {
+      "title": "Fixture: citas",
+      "exercises": [
+        {
+          "kind": "abierta", "concept": "osi", "question": "¿Cuántas capas tiene OSI?", "modelAnswer": "Siete capas.", "keyPoints": ["siete", "capas"],
+          "source": { "file": "Tema99.pdf", "page": 1, "quote": "siete capas de red" }
+        },
+        {
+          "kind": "abierta", "concept": "transporte", "question": "¿Qué garantiza la capa de transporte?", "modelAnswer": "Entrega fiable.", "keyPoints": ["entrega", "fiable"],
+          "source": { "file": "Tema99.pdf", "page": 1, "quote": "garantiza la entrega fiable" }
+        },
+        {
+          "kind": "abierta", "concept": "osi", "question": "Pregunta con cita falsa", "modelAnswer": "No importa.", "keyPoints": ["uno", "dos"],
+          "source": { "file": "Tema99.pdf", "page": 2, "quote": "esta frase no existe en el PDF" }
+        }
+      ]
+    }
+  ]
+}

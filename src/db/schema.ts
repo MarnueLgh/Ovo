@@ -9,7 +9,7 @@ export const subjects = pgTable('subjects', {
   color: text('color').notNull(),
   emoji: text('emoji').notNull(),
   position: integer('position').notNull(),
-})
+}).enableRLS()
 
 export const units = pgTable('units', {
   id: id(),
@@ -17,20 +17,20 @@ export const units = pgTable('units', {
   number: integer('number').notNull(),
   title: text('title').notNull(),
   position: integer('position').notNull(),
-})
+}).enableRLS()
 
 export const concepts = pgTable('concepts', {
   id: id(),
   unitId: uuid('unit_id').notNull().references(() => units.id),
   name: text('name').notNull(),
-})
+}).enableRLS()
 
 export const lessons = pgTable('lessons', {
   id: id(),
   unitId: uuid('unit_id').notNull().references(() => units.id),
   position: integer('position').notNull(),
   title: text('title').notNull(),
-})
+}).enableRLS()
 
 export const exercises = pgTable('exercises', {
   id: id(),
@@ -41,7 +41,7 @@ export const exercises = pgTable('exercises', {
   payload: jsonb('payload').$type<ExercisePayload>().notNull(),
   source: jsonb('source').$type<Source>(),
   retiredAt: timestamp('retired_at', { withTimezone: true }),
-})
+}).enableRLS()
 
 export const attempts = pgTable('attempts', {
   id: uuid('id').primaryKey(),
@@ -51,10 +51,10 @@ export const attempts = pgTable('attempts', {
   correct: boolean('correct').notNull(),
   durationMs: integer('duration_ms').notNull(),
   answeredAt: timestamp('answered_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}).enableRLS()
 
 export const lessonCompletions = pgTable('lesson_completions', {
   id: id(),
   lessonId: uuid('lesson_id').notNull().references(() => lessons.id),
   completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}).enableRLS()

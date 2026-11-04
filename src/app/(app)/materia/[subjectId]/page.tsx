@@ -3,8 +3,10 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PathNode } from '@/components/PathNode'
 import { StreakTile } from '@/components/StreakTile'
-import { getStreak, getSubjectPath, getSubjects } from '@/lib/queries'
+import { getLessonSummary, getStreak, getSubjectPath, getSubjects } from '@/lib/queries'
 import { requireUser } from '@/lib/supabase/server'
+
+const KIND_LABEL: Record<string, string> = { dato_clave: 'Dato clave', relacionar: 'Relacionar', caso_practico: 'Caso práctico', calculo: 'Cálculo' }
 
 async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
   const { subjectId } = await params
@@ -14,6 +16,7 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
   const { subject, units } = path
 
   const next = units.flatMap((u) => u.lessons).find((l) => l.state === 'current')
+  const summary = next ? await getLessonSummary(next.lesson.id) : null
   const currentUnit = units.find((u) => u.lessons.some((l) => l.state === 'current')) ?? units[0]
 
   return (
@@ -36,7 +39,7 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
           const complete = lessons.length > 0 && done === lessons.length
           const active = lessons.some((l) => l.state === 'current')
           const tone = complete ? 'u-done' : active ? 'u-now' : 'u-off'
-          const delay = { animationDelay: `${80 + ui * 60}ms` }
+          const delay = { animationDelay: `${80 + ui * 40}ms` }
           return (
             <section key={unit.id} aria-labelledby={`u-${unit.id}`}>
               <div className={`unit ${tone} in`} style={delay}>
@@ -69,11 +72,17 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
 
       <aside className="rail" aria-label="Resumen">
         <StreakTile current={streak.current} best={streak.best} />
-        <div className="tile t-cielo in" style={{ animationDelay: '180ms' }}>
+        <div className="tile t-cielo in" style={{ animationDelay: '80ms' }}>
           <h2 className="k">Siguiente lección</h2>
           {next ? (
             <>
               <p className="next-title">{next.lesson.title}</p>
+              {summary && (
+                <div className="tags">
+                  {summary.kinds.map((k) => <span key={k} className="tag">{KIND_LABEL[k] ?? k}</span>)}
+                  <span className="tag">{summary.count} {summary.count === 1 ? 'ejercicio' : 'ejercicios'}</span>
+                </div>
+              )}
               <Link className="cta" href={`/leccion/${next.lesson.id}`}>Empezar lección</Link>
             </>
           ) : (

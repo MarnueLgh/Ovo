@@ -1,13 +1,15 @@
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { lessonCompletions, lessons, subjects, units } from '@/db/schema'
+import { exercises, lessonCompletions, lessons, subjects, units } from '@/db/schema'
 import { computeNodeStates, type NodeState } from '@/lib/path'
 import { computeStreak } from '@/lib/streak'
 import { toLocalDay } from '@/lib/time'
+import { isUuid } from '@/lib/uuid'
 
 export const getSubjects = () => db.select().from(subjects).orderBy(asc(subjects.position))
 
 export async function getSubjectPath(subjectId: string) {
+  if (!isUuid(subjectId)) return null
   const [subject] = await db.select().from(subjects).where(eq(subjects.id, subjectId))
   if (!subject) return null
   const unitRows = await db.select().from(units).where(eq(units.subjectId, subjectId)).orderBy(asc(units.position))
@@ -38,4 +40,14 @@ export async function getSubjectPath(subjectId: string) {
 export async function getStreak() {
   const rows = await db.select({ at: lessonCompletions.completedAt }).from(lessonCompletions)
   return computeStreak(rows.map((r) => toLocalDay(r.at)), toLocalDay(new Date()))
+}
+
+/** Tipos de ejercicio (sin repetir, en orden de posición) y total de una lección. */
+export async function getLessonSummary(lessonId: string) {
+  const rows = await db
+    .select({ kind: exercises.kind })
+    .from(exercises)
+    .where(and(eq(exercises.lessonId, lessonId), isNull(exercises.retiredAt)))
+    .orderBy(asc(exercises.position))
+  return { kinds: [...new Set(rows.map((r) => r.kind))], count: rows.length }
 }

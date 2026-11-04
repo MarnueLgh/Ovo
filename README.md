@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ovo
 
-## Getting Started
+App de estudio personal (un solo usuario) hecha con Next.js, Supabase y Drizzle. Se instala en el iPhone como PWA.
 
-First, run the development server:
+## Puesta en marcha
 
 ```bash
+npm install
+cp .env.example .env.local   # completa DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+npm run db:push              # crea las tablas
+npm run db:seed              # OJO: BORRA los datos existentes y vuelve a sembrar
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Despliegue
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Sube el repositorio (privado) a GitHub, impórtalo en Vercel y carga las 3 variables de entorno de `.env.example`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Instalar en el iPhone
 
-## Learn More
+Abre la URL en Safari, toca Compartir y elige "Agregar a pantalla de inicio". Se abre a pantalla completa. No hay modo sin conexión.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Los íconos se generan desde `public/icons/ovo.svg` (192, 512 y `apple-touch-icon.png` de 180 px).

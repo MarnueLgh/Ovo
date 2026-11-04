@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Rubik } from "next/font/google";
 import "./globals.css";
 
@@ -10,6 +10,12 @@ const rubik = Rubik({
 
 export const metadata: Metadata = {
   title: "Ovo",
+  icons: { apple: "/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Ovo", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#F3F0FA",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

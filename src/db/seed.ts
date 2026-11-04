@@ -94,43 +94,47 @@ async function main() {
       return
     }
   }
-  // orden inverso a las FK
-  await db.delete(s.attempts)
-  await db.delete(s.lessonCompletions)
-  await db.delete(s.exercises)
-  await db.delete(s.lessons)
-  await db.delete(s.concepts)
-  await db.delete(s.units)
-  await db.delete(s.subjects)
+  await db.transaction(async (tx) => {
+    // orden inverso a las FK; todo en una transacción para no dejar la base a medias
+    await tx.delete(s.attempts)
+    await tx.delete(s.lessonCompletions)
+    await tx.delete(s.exercises)
+    await tx.delete(s.lessons)
+    await tx.delete(s.concepts)
+    await tx.delete(s.files)
+    await tx.delete(s.imports)
+    await tx.delete(s.units)
+    await tx.delete(s.subjects)
 
-  const subs = await db
-    .insert(s.subjects)
-    .values(SUBJECTS.map((x, position) => ({ ...x, position })))
-    .returning()
-  const telecom = subs.find((x) => x.emoji === '📡')!
+    const subs = await tx
+      .insert(s.subjects)
+      .values(SUBJECTS.map((x, position) => ({ ...x, position })))
+      .returning()
+    const telecom = subs.find((x) => x.emoji === '📡')!
 
-  const [, u2] = await db
-    .insert(s.units)
-    .values([
-      { subjectId: telecom.id, number: 1, title: 'Fundamentos de señales', position: 0 },
-      { subjectId: telecom.id, number: 2, title: 'Medios de transmisión', position: 1 },
-    ])
-    .returning()
+    const [, u2] = await tx
+      .insert(s.units)
+      .values([
+        { subjectId: telecom.id, number: 1, title: 'Fundamentos de señales', position: 0 },
+        { subjectId: telecom.id, number: 2, title: 'Medios de transmisión', position: 1 },
+      ])
+      .returning()
 
-  const [lesson] = await db
-    .insert(s.lessons)
-    .values({ unitId: u2.id, position: 0, title: 'Cable directo vs. cruzado' })
-    .returning()
+    const [lesson] = await tx
+      .insert(s.lessons)
+      .values({ unitId: u2.id, position: 0, title: 'Cable directo vs. cruzado' })
+      .returning()
 
-  await db.insert(s.exercises).values(
-    payloads.map((payload, position) => ({
-      lessonId: lesson.id,
-      position,
-      kind: payload.kind,
-      payload,
-      source: payload.kind === 'calculo' ? null : source,
-    })),
-  )
+    await tx.insert(s.exercises).values(
+      payloads.map((payload, position) => ({
+        lessonId: lesson.id,
+        position,
+        kind: payload.kind,
+        payload,
+        source: payload.kind === 'calculo' ? null : source,
+      })),
+    )
+  })
   console.log('seed ok')
 }
 

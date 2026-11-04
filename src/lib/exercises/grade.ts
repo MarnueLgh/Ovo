@@ -10,4 +10,8 @@ export function gradeRelacionar(pairs: number, firstTryCorrect: number): { score
   return { score: firstTryCorrect / pairs, correct: firstTryCorrect === pairs }
 }
 
+export function gradeAbierta(total: number, checked: number): { score: number; correct: boolean } {
+  return { score: checked / total, correct: checked === total }
+}
+
 export const newAttemptId = (): string => crypto.randomUUID()

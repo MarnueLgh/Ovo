@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parsePayload, type CasoPractico } from './types'
-import { gradeCaso, gradeRelacionar, newAttemptId } from './grade'
+import { gradeCaso, gradeRelacionar, gradeAbierta, newAttemptId } from './grade'
 
 const WHY = 'El cable directo sirve para unir equipos distintos, como una PC y un switch.'
 const caso: CasoPractico = {
@@ -48,5 +48,12 @@ describe('ejercicios', () => {
   })
   it('newAttemptId es único', () => {
     expect(newAttemptId()).not.toBe(newAttemptId())
+  })
+})
+
+describe("gradeAbierta", () => {
+  it("califica por puntos clave", () => {
+    expect(gradeAbierta(4, 3)).toEqual({ score: 0.75, correct: false })
+    expect(gradeAbierta(3, 3)).toEqual({ score: 1, correct: true })
   })
 })

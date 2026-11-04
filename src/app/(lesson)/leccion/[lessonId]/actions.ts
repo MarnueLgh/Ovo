@@ -1,8 +1,9 @@
 'use server'
 
+import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db'
-import { attempts, lessonCompletions } from '@/db/schema'
+import { attempts, exercises, lessonCompletions } from '@/db/schema'
 import { requireUser } from '@/lib/supabase/server'
 
 const Attempt = z.object({
@@ -24,4 +25,11 @@ export async function recordAttempt(input: z.input<typeof Attempt>): Promise<voi
 export async function completeLesson(lessonId: string): Promise<void> {
   await requireUser()
   await db.insert(lessonCompletions).values({ lessonId: z.uuid().parse(lessonId) })
+}
+
+/** "Esto está mal": retira el ejercicio y lo marca para reemplazo. Idempotente. */
+export async function reportExercise(exerciseId: string): Promise<void> {
+  await requireUser()
+  const id = z.uuid().parse(exerciseId)
+  await db.update(exercises).set({ retiredAt: new Date(), reportedAt: new Date() }).where(and(eq(exercises.id, id), isNull(exercises.retiredAt)))
 }

@@ -14,6 +14,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:marcar-baseline": "tsx scripts/marcar-baseline.ts",
     "importar": "tsx scripts/importar.ts",
+    "reportados": "tsx scripts/reportados.ts",
     "fixtures:limpiar": "tsx scripts/fixtures/limpiar.ts"
   },
   "dependencies": {

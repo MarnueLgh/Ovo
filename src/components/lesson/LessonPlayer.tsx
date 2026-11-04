@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { completeLesson, recordAttempt } from '@/app/(lesson)/leccion/[lessonId]/actions'
+import { completeLesson, recordAttempt, reportExercise } from '@/app/(lesson)/leccion/[lessonId]/actions'
 import { newAttemptId } from '@/lib/exercises/grade'
 import type { ExercisePayload, Source } from '@/lib/exercises/types'
 import { Abierta } from './Abierta'
@@ -23,6 +23,9 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
   const [note, setNote] = useState<string | null>(null)
   const [kb, setKb] = useState(false)
   const [exercises, setExercises] = useState(all) // sin los reportados en esta partida
+  const [asking, setAsking] = useState(false)
+  const [repErr, setRepErr] = useState(false)
+  const reporting = useRef(false)
   const attemptIds = useRef(new Map<string, string>()) // un id por ejercicio, estable ante doble clic/reintentos
   const sent = useRef(new Set<string>())
   const startedAt = useRef(0)
@@ -62,11 +65,33 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
     if (finishing.current || Date.now() - changedAt.current < 300) return
     setKb(viaKeyboard)
     setNote(null)
+    setAsking(false)
+    setRepErr(false)
     if (i < exercises.length - 1) {
       changedAt.current = Date.now()
       return setI(i + 1)
     }
     await finish()
+  }
+
+  async function onReport(viaKeyboard: boolean) {
+    if (reporting.current || finishing.current) return
+    reporting.current = true
+    setRepErr(false)
+    try {
+      await reportExercise(ex.id)
+    } catch {
+      setAsking(false)
+      setRepErr(true)
+      reporting.current = false
+      return
+    }
+    setAsking(false)
+    setKb(viaKeyboard)
+    changedAt.current = Date.now()
+    reporting.current = false
+    if (i < exercises.length - 1) setExercises((l) => l.filter((e) => e.id !== ex.id)) // el siguiente ocupa el mismo índice; no se registra intento
+    else await finish()
   }
 
   const props = { source: ex.source, onResult, onContinue, saving, note }
@@ -81,6 +106,19 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
         <span className="streak"><span aria-hidden="true">🔥 {streak}</span><span className="sr">Racha: {streak} {streak === 1 ? 'día' : 'días'}</span></span>
       </header>
       <main className="stage">
+        <div className="rep" aria-live="polite">
+          {asking ? (
+            <>
+              <span>¿Quitar este ejercicio?</span>
+              <button type="button" onClick={(e) => onReport(e.detail === 0)}>Sí</button>
+              <span aria-hidden="true">·</span>
+              <button type="button" onClick={() => setAsking(false)}>No</button>
+            </>
+          ) : (
+            <button type="button" onClick={() => setAsking(true)}>Esto está mal</button>
+          )}
+          {repErr && <span className="err">No se pudo reportar</span>}
+        </div>
         <div key={ex.id} className={`ex${kb ? '' : ' enter'}`}>
           {p.kind === 'dato_clave' ? <DatoClave payload={p} {...props} />
             : p.kind === 'relacionar' ? <Relacionar payload={p} {...props} />

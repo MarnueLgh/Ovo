@@ -21,9 +21,10 @@ type Props = {
   onClick: (kb: boolean) => void
   why?: { open: boolean; onToggle: (kb: boolean) => void }
   note?: string | null
+  other?: { label: string; onClick: () => void }
 }
 
-export function CheckBar({ tone, title, sub, label, disabled, onClick, why, note }: Props) {
+export function CheckBar({ tone, title, sub, label, disabled, onClick, why, note, other }: Props) {
   return (
     <footer className={`bar${tone ? ` ${tone}` : ''}`}>
       <div className="msg" aria-live="polite">
@@ -31,6 +32,7 @@ export function CheckBar({ tone, title, sub, label, disabled, onClick, why, note
         {sub && <span>{sub}</span>}
         {note && <span className="note">{note}</span>}
       </div>
+      {other && <button type="button" className="btn why" onClick={other.onClick}>{other.label}</button>}
       {why && (
         <button type="button" className="btn why" aria-expanded={why.open} aria-controls="explain" onClick={(e) => why.onToggle(e.detail === 0)}>
           ¿Por qué?

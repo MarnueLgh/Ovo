@@ -1,7 +1,7 @@
 import type { DatoClave as Payload } from '@/lib/exercises/types'
 import { CheckBar, type ExerciseProps } from './CheckBar'
 
-export function DatoClave({ payload: p, source, onContinue }: ExerciseProps<Payload>) {
+export function DatoClave({ payload: p, source, onContinue, saving }: ExerciseProps<Payload>) {
   return (
     <>
       <span className="kind">💡 Dato clave</span>
@@ -23,7 +23,7 @@ export function DatoClave({ payload: p, source, onContinue }: ExerciseProps<Payl
         <div><b>{p.rule.headline}</b>{p.rule.text}</div>
       </div>
       {source && <p className="src">Fuente: {source.file}, p. {source.page}</p>}
-      <CheckBar label="Entendido" onClick={onContinue} />
+      <CheckBar label="Entendido" disabled={saving} onClick={onContinue} />
     </>
   )
 }

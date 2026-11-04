@@ -12,7 +12,7 @@
 .lesson .stage{flex:1;display:grid;place-items:start center;padding:10px 40px 150px}
 .lesson .ex{width:min(760px,100%);min-width:0}
 /* animar los hijos, no .ex: un transform en .ex volvería su contenedor a la barra fija */
-.lesson .ex.enter>:not(.bar):not(.explain){opacity:0;transform:translateY(10px);animation:rise 240ms var(--ease) forwards}
+.lesson .ex.enter>:not(.bar):not(.explain):not(.steps){opacity:0;transform:translateY(10px);animation:rise 240ms var(--ease) forwards}
 .lesson .kind{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;font-weight:700;color:var(--lila-d);background:#EDE5FC;padding:5px 12px;border-radius:99px;margin-bottom:12px}
 .lesson h1{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-bottom:6px;text-wrap:balance}
 .lesson .lead{color:var(--mute);font-size:15px;margin-bottom:22px}
@@ -32,10 +32,11 @@
 .lesson .col{display:flex;flex-direction:column;gap:12px}
 .lesson .it{background:#fff;border:2px solid var(--line);border-radius:18px;padding:14px 16px;font:600 14.5px var(--font-rubik),Rubik,sans-serif;color:var(--ink);text-align:left;position:relative;min-height:62px;display:flex;align-items:center;width:100%}
 .lesson .it.ok{border-color:var(--ok-d);background:var(--ok-bg)}
-.lesson .bad-a{animation:shake-a 320ms ease}
-.lesson .bad-b{animation:shake-b 320ms ease}
-@keyframes shake-a{0%,100%{border-color:var(--no-d)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-@keyframes shake-b{0%,100%{border-color:var(--no-d)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.lesson .bad-a,.lesson .bad-b{border-color:var(--no-d)}
+.lesson .bad-a{animation:shake-a 240ms var(--ease)}
+.lesson .bad-b{animation:shake-b 240ms var(--ease)}
+@keyframes shake-a{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes shake-b{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .lesson .plug{position:absolute;top:50%;width:22px;height:22px;margin-top:-11px;padding:0;border-radius:50%;background:var(--ink);border:4px solid #fff;box-shadow:0 0 0 2px var(--ink);cursor:grab;touch-action:none;transition:transform 160ms var(--ease)}
 .lesson .plug::before{content:"";position:absolute;inset:-12px;border-radius:50%} /* zona táctil de 46px */
 .lesson .L .plug{right:-12px}
@@ -56,6 +57,27 @@
 .lesson .opt.sel{border-color:var(--lila-d);box-shadow:0 4px 0 var(--lila-d);background:#F6F1FE}
 .lesson .opt.right{border-color:var(--ok-d);box-shadow:0 4px 0 var(--ok-d);background:var(--ok-bg)}
 .lesson .opt.wrong{border-color:var(--no-d);box-shadow:0 4px 0 var(--no-d);background:var(--no-bg)}
+
+/* subneteo */
+.lesson .ip{font-variant-numeric:tabular-nums;background:var(--sol);padding:2px 10px;border-radius:10px;font-weight:800;white-space:nowrap}
+.lesson .sn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.lesson .f{background:#fff;border:2px solid var(--line);border-radius:18px;padding:12px 14px;min-width:0;transition:border-color 160ms ease,background 160ms ease}
+.lesson .f label{font-size:12.5px;font-weight:600;color:var(--mute);display:block;margin-bottom:6px}
+.lesson .ex input{width:100%;min-width:0;border:0;background:#F6F3FC;border-radius:10px;padding:9px 10px;font:600 16px var(--font-rubik),Rubik,sans-serif;font-variant-numeric:tabular-nums;color:var(--ink)}
+.lesson .ex input:focus-visible{outline:3px solid var(--lila-d);outline-offset:1px}
+.lesson .f.ok,.lesson td.ok{border-color:var(--ok-d);background:var(--ok-bg)}
+.lesson .f.no,.lesson td.no{border-color:var(--no-d);background:var(--no-bg)}
+.lesson .fix{display:block;font-size:12px;font-weight:700;color:var(--no-d);margin-top:5px}
+.lesson .sn-scroll{overflow-x:auto;margin:0 -8px;padding:0 8px}
+.lesson .sn-scroll table{width:100%;min-width:560px;border-collapse:separate;border-spacing:8px;margin:0 -8px}
+.lesson .sn-scroll th{font-size:12.5px;color:var(--mute);font-weight:600;text-align:left;padding:0 4px}
+.lesson .sn-scroll td{background:#fff;border:2px solid var(--line);border-radius:14px;padding:8px;transition:border-color 160ms ease,background 160ms ease}
+.lesson .sn-scroll th.n{font-weight:800;color:var(--lila-d);width:40px;text-align:center;font-size:14px}
+.lesson .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.lesson .steps{background:#fff;border-radius:22px;padding:18px 20px;margin-top:18px;border:2px solid var(--line);animation:pop 200ms var(--ease)}
+.lesson .steps.nokb{animation:none}
+.lesson .steps h2{font-size:17px;margin-bottom:10px}
+.lesson .steps ol{padding-left:20px;line-height:1.7;font-size:14.5px}
 
 /* barra inferior */
 .lesson .bar{position:fixed;left:0;right:0;bottom:0;padding:18px 40px max(18px,env(safe-area-inset-bottom));background:#fff;border-top:2px solid var(--line);display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px;z-index:2}
@@ -94,6 +116,7 @@
   .lesson .stage{padding:6px 16px 190px}
   .lesson h1{font-size:24px}
   .lesson .vs,.lesson .opts{grid-template-columns:1fr}
+  .lesson .sn-grid{grid-template-columns:1fr 1fr}
   .lesson .match{gap:44px}
   .lesson .it{padding:10px 12px;font-size:13.5px}
   .lesson .R .it{padding-left:20px}

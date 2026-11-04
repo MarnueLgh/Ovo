@@ -1,7 +1,9 @@
 import { z } from 'zod'
 import { Abierta, Calculo, CasoPracticoBase, DatoClave, Relacionar, SourceSchema, withCasoChecks } from '../exercises/types'
 
-const meta = { concept: z.string(), group: z.string().optional(), source: SourceSchema.optional() }
+// `verified` lo decide solo el importador; si el paquete lo trae, se descarta (zod quita claves desconocidas).
+const PackSource = SourceSchema.omit({ verified: true })
+const meta = { concept: z.string(), group: z.string().optional(), source: PackSource.optional() }
 
 // Cada miembro se extiende con `meta`; el caso práctico conserva sus refinamientos.
 const PackExerciseSchema = z.discriminatedUnion('kind', [
@@ -17,7 +19,7 @@ const Lesson = z
   .object({
     title: z.string().min(1).optional(),
     lessonId: z.string().uuid().optional(),
-    exercises: z.array(PackExerciseSchema),
+    exercises: z.array(PackExerciseSchema).max(36),
   })
   .refine((l) => (l.title !== undefined) !== (l.lessonId !== undefined), {
     message: 'La lección necesita exactamente uno de title o lessonId',
@@ -29,7 +31,7 @@ export const PackSchema = z
     unit: z.object({ number: z.number().int().min(1), title: z.string() }),
     files: z.array(z.object({ name: z.string(), kind: z.enum(['pdf', 'imagen']) })),
     concepts: z.array(z.object({ key: z.string(), name: z.string() })),
-    lessons: z.array(Lesson),
+    lessons: z.array(Lesson).min(1),
   })
   .superRefine((p, ctx) => {
     const issue = (path: (string | number)[], message: string) => ctx.addIssue({ code: 'custom', path, message })
@@ -38,16 +40,21 @@ export const PackSchema = z
       if (keys.has(c.key)) issue(['concepts', i, 'key'], `Concepto duplicado: ${c.key}`)
       keys.add(c.key)
     })
-    const files = new Set(p.files.map((f) => f.name))
+    const files = new Map(p.files.map((f) => [f.name, f.kind]))
     p.lessons.forEach((l, li) => {
-      if (l.exercises.length < 1 || l.exercises.length > 12)
-        issue(['lessons', li, 'exercises'], 'Cada lección debe tener entre 1 y 12 ejercicios')
+      // Una partida muestra un ejercicio por grupo de variantes: el tamaño se mide en grupos distintos.
+      // Grupo por omisión: concepto+tipo (equivale a nombre+tipo dentro de un mismo paquete).
+      const groups = new Set(l.exercises.map((e) => e.group ?? `${e.concept}:${e.kind}`)).size
+      if (groups < 1 || groups > 12)
+        issue(['lessons', li, 'exercises'], `Cada lección debe tener entre 1 y 12 grupos de variantes distintos (tiene ${groups})`)
       l.exercises.forEach((e, ei) => {
         const at = ['lessons', li, 'exercises', ei]
         if (!keys.has(e.concept)) issue([...at, 'concept'], `Concepto inexistente: ${e.concept}`)
         if (e.kind !== 'calculo' && !e.source) issue([...at, 'source'], 'Falta source')
         if (e.source && !files.has(e.source.file))
           issue([...at, 'source', 'file'], `Archivo no listado en files: ${e.source.file}`)
+        else if (e.source && files.get(e.source.file) === 'pdf' && !e.source.quote?.trim())
+          issue([...at, 'source', 'quote'], 'Las fuentes de un PDF requieren quote (cita literal de la página)')
       })
     })
   })

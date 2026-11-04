@@ -1,30 +1,36 @@
-// Uso: npm run importar -- <paquete.json> [--dry-run] [--material <dir>]
+// Uso: npm run importar -- <paquete.json> [--dry-run] [--material <dir>] [--force]
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { and, eq, inArray, max } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, max } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { extractText, getDocumentProxy } from 'unpdf'
 import * as s from '../src/db/schema'
-import { planImport } from '../src/lib/content/import'
+import { planImport, summarize } from '../src/lib/content/import'
 import { PackSchema } from '../src/lib/content/pack'
+import { effectiveGroup } from '../src/lib/content/reportados'
 
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
+const force = args.includes('--force')
 const mi = args.indexOf('--material')
-const materialDir = mi >= 0 ? args[mi + 1] : 'material'
+const materialArg = mi >= 0 ? args[mi + 1] : undefined
+const materialDir = materialArg ?? 'material'
 const jsonPath = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--material')
 
 class Fallo extends Error {}
+const USO = 'Uso: npm run importar -- <paquete.json> [--dry-run] [--material <dir>] [--force]'
 const client = postgres(process.env.DATABASE_URL!, { prepare: false })
 const db = drizzle(client)
 
 async function main() {
-  if (!jsonPath) throw new Fallo('Uso: npm run importar -- <paquete.json> [--dry-run] [--material <dir>]')
+  if (mi >= 0 && (!materialArg || materialArg.startsWith('--'))) throw new Fallo(`Falta la carpeta después de --material.
+${USO}`)
+  if (!jsonPath) throw new Fallo(USO)
   if (!existsSync(jsonPath)) throw new Fallo(`No existe el archivo: ${jsonPath}`)
   const raw = readFileSync(jsonPath)
   const hash = createHash('sha256').update(raw).digest('hex')
@@ -46,6 +52,7 @@ async function main() {
   const [unit] = await db.select().from(s.units).where(and(eq(s.units.subjectId, subject.id), eq(s.units.number, pack.unit.number)))
   const lessonIds = pack.lessons.flatMap((l) => (l.lessonId ? [l.lessonId] : []))
   const nextEx = new Map<string, number>()
+  let reported: { id: string; lessonId: string; group: string }[] = []
   if (lessonIds.length) {
     const found = await db.select({ id: s.lessons.id, unitId: s.lessons.unitId }).from(s.lessons).where(inArray(s.lessons.id, lessonIds))
     for (const id of lessonIds) {
@@ -56,6 +63,10 @@ async function main() {
     const rows = await db.select({ id: s.exercises.lessonId, m: max(s.exercises.position) }).from(s.exercises)
       .where(inArray(s.exercises.lessonId, lessonIds)).groupBy(s.exercises.lessonId)
     for (const id of lessonIds) nextEx.set(id, (rows.find((r) => r.id === id)?.m ?? -1) + 1)
+    const rep = await db.select({ id: s.exercises.id, lessonId: s.exercises.lessonId, variantGroup: s.exercises.variantGroup, kind: s.exercises.kind, concept: s.concepts.name })
+      .from(s.exercises).leftJoin(s.concepts, eq(s.exercises.conceptId, s.concepts.id))
+      .where(and(inArray(s.exercises.lessonId, lessonIds), isNotNull(s.exercises.reportedAt))).orderBy(s.exercises.position)
+    reported = rep.map((r) => ({ id: r.id, lessonId: r.lessonId, group: effectiveGroup({ variantGroup: r.variantGroup, conceptName: r.concept, kind: r.kind }) }))
   }
 
   // Archivos: todos deben existir antes de escribir nada.
@@ -71,18 +82,27 @@ async function main() {
 
   const concepts = unit ? await db.select().from(s.concepts).where(eq(s.concepts.unitId, unit.id)) : []
   const [{ lm }] = unit ? await db.select({ lm: max(s.lessons.position) }).from(s.lessons).where(eq(s.lessons.unitId, unit.id)) : [{ lm: null }]
+  const lessonTitles = unit ? (await db.select({ t: s.lessons.title }).from(s.lessons).where(eq(s.lessons.unitId, unit.id))).map((l) => l.t) : []
   const plan = planImport(pack, pagesByFile, {
     unitId: unit?.id,
     nextLessonPosition: (lm ?? -1) + 1,
     conceptIds: new Map(concepts.map((c) => [c.name, c.id])),
     nextExercisePositionByLesson: nextEx,
+    lessonTitles,
+    reported,
   })
 
+  if (plan.errors.length) throw new Fallo(`Paquete inválido (no se escribió nada):
+${plan.errors.map((e) => `- ${e}`).join('\n')}`)
   const nuevas = plan.lessons.filter((l) => l.lessonId === undefined).length
-  const nEx = plan.lessons.reduce((n, l) => n + l.exercises.length, 0)
+  if (plan.existingLessons > 0 && nuevas > 0)
+    console.warn(`AVISO La unidad ya tiene ${plan.existingLessons} lecciones; este paquete agrega ${nuevas} más al final (no reemplaza las existentes).`)
+  if (plan.duplicateTitles.length && !force)
+    throw new Fallo(`Ya existen lecciones con estos títulos en la unidad (no se escribió nada; usa --force para duplicarlas):
+${plan.duplicateTitles.map((x) => `- ${x}`).join('\n')}`)
   plan.warnings.forEach((w) => console.warn(`AVISO ${w}`))
-  const resumen = `Unidad ${pack.unit.number} · ${nuevas} lecciones nuevas · ${nEx} ejercicios · ${plan.unverified} citas sin verificar`
-  if (dryRun) return console.log(`[dry-run, no se escribió nada] ${resumen}`)
+  const detalle = summarize(plan).join('\n')
+  if (dryRun) return console.log(`[dry-run, no se escribió nada] ${detalle}`)
 
   await db.transaction(async (tx) => {
     let unitId = unit?.id
@@ -106,9 +126,11 @@ async function main() {
         payload: e.payload, source: e.source, variantGroup: e.variantGroup,
       })))
     }
+    if (plan.clearReported.length) // el reemplazo ya existe: sale de "pendientes" (retired_at se conserva)
+      await tx.update(s.exercises).set({ reportedAt: null }).where(inArray(s.exercises.id, plan.clearReported))
     await tx.insert(s.imports).values({ hash, file: jsonPath })
   })
-  console.log(resumen)
+  console.log(detalle)
 }
 
 main().then(

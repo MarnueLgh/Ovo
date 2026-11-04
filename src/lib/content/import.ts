@@ -1,5 +1,6 @@
 import type { ExercisePayload, Source } from '../exercises/types'
 import { findQuotePage, normalizeForMatch } from './quotes'
+import { matchReplacements } from './reportados'
 import type { Pack } from './pack'
 
 export type Existing = {
@@ -7,6 +8,8 @@ export type Existing = {
   nextLessonPosition: number
   conceptIds: Map<string, string> // nombre -> id
   nextExercisePositionByLesson: Map<string, number>
+  lessonTitles?: string[] // lecciones que ya tiene la unidad
+  reported?: { id: string; lessonId: string; group: string }[] // ejercicios reportados de las lecciones del paquete
 }
 
 export type PlannedExercise = {
@@ -17,20 +20,35 @@ export type PlannedExercise = {
   source: Source | null
   variantGroup: string
 }
-export type PlannedLesson = { lessonId?: string; position?: number; title?: string; exercises: PlannedExercise[] }
+export type PlannedLesson = {
+  lessonId?: string
+  position?: number
+  title?: string
+  exercises: PlannedExercise[]
+  groups: number // ejercicios por partida: grupos de variantes distintos
+}
 
 export type Plan = {
   warnings: string[]
+  errors: string[] // impiden escribir
   unit: { number: number; title: string; unitId?: string }
   newConcepts: string[] // nombres que hay que crear
   files: { name: string; kind: 'pdf' | 'imagen'; pages: number | null }[]
   lessons: PlannedLesson[]
-  unverified: number
+  unverified: number // cita no encontrada en el PDF
+  unverifiable: number // página sin texto (escaneo): no se puede comprobar
+  existingLessons: number
+  duplicateTitles: string[] // títulos nuevos que ya existen en la unidad
+  clearReported: string[] // reportados que estos ejercicios reemplazan
 }
+
+const MIN_PER_GAME = 6
 
 export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>, existing: Existing): Plan {
   const warnings: string[] = []
+  const errors: string[] = []
   let unverified = 0
+  let unverifiable = 0
   const nameByKey = new Map(pack.concepts.map((c) => [c.key, c.name]))
   const newConcepts = [...new Set(pack.concepts.map((c) => c.name))].filter((n) => !existing.conceptIds.has(n))
   const nextEx = new Map(existing.nextExercisePositionByLesson)
@@ -38,21 +56,31 @@ export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>
     if (l.lessonId !== undefined && !nextEx.has(l.lessonId)) throw new Error(`lessonId sin posiciones conocidas: ${l.lessonId}`)
   })
   let nextLesson = existing.nextLessonPosition
+  const incoming: { lessonId: string; group: string }[] = []
 
   const lessons = pack.lessons.map((l, li): PlannedLesson => {
     const planned: PlannedLesson =
-      l.lessonId !== undefined ? { lessonId: l.lessonId, exercises: [] } : { position: nextLesson++, title: l.title, exercises: [] }
+      l.lessonId !== undefined
+        ? { lessonId: l.lessonId, exercises: [], groups: 0 }
+        : { position: nextLesson++, title: l.title, exercises: [], groups: 0 }
     const key = l.lessonId ?? `new:${li}`
     l.exercises.forEach((e, ei) => {
       const { concept, group, source, ...payload } = e
       const where = `Lección ${li + 1}, ejercicio ${ei + 1}`
+      const at = `lessons.${li}.exercises.${ei}.source`
       let src: Source | null = null
       if (source) {
-        src = { ...source }
+        // `verified` nunca viene del paquete: solo lo fija este bloque.
+        src = { file: source.file, page: source.page, quote: source.quote }
         const pages = pagesByFile.get(source.file) ?? null
-        if (pages) {
-          if (!source.quote) {
-            warnings.push(`${where}: sin cita textual en ${source.file} p. ${source.page}; no se pudo verificar`)
+        if (source.quote && source.quote.trim().split(/\s+/).length < 3)
+          warnings.push(`${where}: la cita "${source.quote}" tiene menos de 3 palabras; cita la frase que respalda el ejercicio`)
+        if (pages && source.page > pages.length) {
+          errors.push(`${at}.page: ${source.file} tiene ${pages.length} páginas y se cita la ${source.page}`)
+        } else if (pages && source.quote) {
+          if (!normalizeForMatch(pages[source.page - 1])) {
+            unverifiable++
+            warnings.push(`${where}: página ${source.page} de ${source.file} sin texto seleccionable: la cita no se puede verificar`)
           } else {
             const found = findQuotePage(source.quote, pages, source.page)
             if (found === null) {
@@ -72,18 +100,50 @@ export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>
       const conceptName = nameByKey.get(concept)!
       const position = nextEx.get(key) ?? 0
       nextEx.set(key, position + 1)
-      planned.exercises.push({
-        position,
-        conceptName,
-        kind: e.kind,
-        payload: payload as ExercisePayload,
-        source: src,
-        variantGroup: group ?? `${normalizeForMatch(conceptName)}:${e.kind}`,
-      })
+      const variantGroup = group ?? `${normalizeForMatch(conceptName)}:${e.kind}`
+      if (l.lessonId !== undefined) incoming.push({ lessonId: l.lessonId, group: variantGroup })
+      planned.exercises.push({ position, conceptName, kind: e.kind, payload: payload as ExercisePayload, source: src, variantGroup })
     })
+    planned.groups = new Set(planned.exercises.map((e) => e.variantGroup)).size
+    if (planned.title !== undefined && planned.groups < MIN_PER_GAME)
+      warnings.push(`Lección "${planned.title}": solo ${planned.groups} ejercicios por partida (se recomiendan al menos ${MIN_PER_GAME})`)
     return planned
   })
 
+  const { clear, unmatched } = matchReplacements(existing.reported ?? [], incoming)
+  unmatched.forEach((i) =>
+    warnings.push(`El ejercicio nuevo con grupo "${incoming[i].group}" no reemplaza a ningún reportado de su lección (revisa el grupo con npm run reportados)`),
+  )
+
+  const existingTitles = existing.lessonTitles ?? []
+  const old = new Set(existingTitles.map(normalizeForMatch))
+  const duplicateTitles = lessons.flatMap((l) => (l.title !== undefined && old.has(normalizeForMatch(l.title)) ? [l.title] : []))
   const files = pack.files.map((f) => ({ ...f, pages: pagesByFile.get(f.name)?.length ?? null }))
-  return { warnings, unit: { ...pack.unit, unitId: existing.unitId }, newConcepts, files, lessons, unverified }
+  return {
+    warnings, errors, unit: { ...pack.unit, unitId: existing.unitId }, newConcepts, files, lessons,
+    unverified, unverifiable, existingLessons: existingTitles.length, duplicateTitles, clearReported: clear,
+  }
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/** Líneas de resumen: totales y, por lección nueva, ejercicios por partida (grupos distintos) y en total. */
+export function summarize(plan: Plan): string[] {
+  const nuevas = plan.lessons.filter((l) => l.lessonId === undefined)
+  const total = plan.lessons.reduce((n, l) => n + l.exercises.length, 0)
+  const head = [
+    `Unidad ${plan.unit.number}`,
+    `${plural(nuevas.length, 'lección nueva', 'lecciones nuevas')}`,
+    plural(total, 'ejercicio', 'ejercicios'),
+    plural(plan.unverified, 'cita sin verificar', 'citas sin verificar'),
+    ...(plan.unverifiable > 0 ? [plural(plan.unverifiable, 'cita no verificable (sin texto)', 'citas no verificables (sin texto)')] : []),
+  ].join(' · ')
+  return [
+    head,
+    ...plan.lessons.map((l) =>
+      l.lessonId === undefined
+        ? `  ${l.title}: ${plural(l.groups, 'ejercicio', 'ejercicios')} por partida (${l.exercises.length} en total)`
+        : `  lección ${l.lessonId}: ${plural(l.exercises.length, 'ejercicio nuevo', 'ejercicios nuevos')}`,
+    ),
+  ]
 }

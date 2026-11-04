@@ -5,7 +5,6 @@ import { computeNodeStates, type NodeState } from '@/lib/path'
 import { computeStreak } from '@/lib/streak'
 import { toLocalDay } from '@/lib/time'
 import { pickVariants } from '@/lib/content/variants'
-import { replacementKey, withoutReplacement } from '@/lib/content/reportados'
 import { parsePayload } from '@/lib/exercises/types'
 import { isUuid } from '@/lib/uuid'
 
@@ -97,7 +96,7 @@ export async function getLessonForPlay(lessonId: string) {
 export const getUnitFiles = (unitId: string) =>
   db.select({ name: files.name, kind: files.kind, pages: files.pages }).from(files).where(eq(files.unitId, unitId)).orderBy(asc(files.name))
 
-/** Material por materia → unidad: archivos, lecciones y ejercicios activos; más los reportados sin reemplazo (misma regla que `npm run reportados`). */
+/** Material por materia → unidad: archivos, lecciones y ejercicios activos; más los reportados pendientes (con `reported_at`; igual que `npm run reportados`). */
 export async function getMaterial() {
   const [subjectRows, unitRows, fileRows, lessonRows, exRows] = await Promise.all([
     getSubjects(),
@@ -108,8 +107,7 @@ export async function getMaterial() {
   ])
   const unitOfLesson = new Map(lessonRows.map((l) => [l.id, l.unitId]))
   const active = exRows.filter((e) => !e.retiredAt)
-  const keyed = (e: (typeof exRows)[number]) => ({ lessonId: e.lessonId, key: replacementKey(e) })
-  const pending = withoutReplacement(exRows.filter((e) => e.reportedAt).map(keyed), active.map(keyed)).length
+  const pending = exRows.filter((e) => e.reportedAt).length
   return {
     pending,
     subjects: subjectRows.map((subject) => ({

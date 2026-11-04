@@ -1,12 +1,12 @@
-// Uso: npm run reportados — ejercicios reportados ("Esto está mal") sin reemplazo activo, por materia y unidad.
+// Uso: npm run reportados — ejercicios reportados ("Esto está mal") pendientes de reemplazo (reported_at no nulo), por materia y unidad.
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { asc, eq, isNotNull, isNull } from 'drizzle-orm'
+import { asc, eq, isNotNull } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as s from '../src/db/schema'
-import { replacementKey, withoutReplacement } from '../src/lib/content/reportados'
+import { effectiveGroup } from '../src/lib/content/reportados'
 import type { ExercisePayload } from '../src/lib/exercises/types'
 
 const client = postgres(process.env.DATABASE_URL!, { prepare: false })
@@ -28,9 +28,8 @@ async function main() {
     .leftJoin(s.concepts, eq(s.exercises.conceptId, s.concepts.id))
     .where(isNotNull(s.exercises.reportedAt))
     .orderBy(asc(s.subjects.position), asc(s.units.position), asc(s.lessons.position), asc(s.exercises.position))
-  const active = (await db.select().from(s.exercises).where(isNull(s.exercises.retiredAt))).map((e) => ({ lessonId: e.lessonId, key: replacementKey(e) }))
-  const pending = withoutReplacement(rows.map((r) => ({ ...r, lessonId: r.e.lessonId, key: replacementKey(r.e) })), active)
-  if (pending.length === 0) return console.log('No hay ejercicios reportados sin reemplazo.')
+  const pending = rows
+  if (pending.length === 0) return console.log('No hay ejercicios reportados pendientes.')
 
   let head = ''
   for (const r of pending) {
@@ -40,8 +39,9 @@ async function main() {
     console.log(`\n  ejercicio ${r.e.id}  (${r.e.kind})`)
     console.log(`    lección:  ${r.lesson.id}  "${r.lesson.title}"`)
     console.log(`    concepto: ${r.concept ?? '(ninguno)'}   fuente: ${src}`)
+    console.log(`    group:    ${effectiveGroup({ variantGroup: r.e.variantGroup, conceptName: r.concept, kind: r.e.kind })}`)
     console.log(`    texto:    ${mainText(r.e.payload)}`)
   }
-  console.log(`\n${pending.length} por reemplazar. Genera un paquete con { "lessonId": ... } para cada lección.`)
+  console.log(`\n${pending.length} por reemplazar. Genera un paquete con { "lessonId": ... } para cada lección, usando el "group" exacto de arriba.`)
 }
 main().then(() => client.end(), (e) => { console.error(e instanceof Error ? e.message : e); return client.end().then(() => process.exit(1)) })

@@ -5,7 +5,7 @@ const rel = {
   kind: 'relacionar',
   prompt: 'p',
   concept: 'c1',
-  source: { file: 'a.pdf', page: 1 },
+  source: { file: 'a.pdf', page: 1, quote: 'una cita de prueba' },
   pairs: [1, 2, 3].map((i) => ({ term: `t${i}`, definition: `d${i}` })),
 }
 const caso = (options: unknown[]) => ({
@@ -19,7 +19,7 @@ const pack = (exercises: unknown[]) => ({
   lessons: [{ title: 'L1', exercises }],
 })
 const opts2 = [{ text: 'a', correct: true }, { text: 'b', correct: false, whyWrong: 'x' }]
-const src = { file: 'a.pdf', page: 1 }
+const src = { file: 'a.pdf', page: 1, quote: 'una cita de prueba' }
 
 describe('PackSchema', () => {
   it('pack mínimo válido', () => expect(PackSchema.safeParse(pack([rel])).success).toBe(true))
@@ -58,14 +58,39 @@ describe('PackSchema', () => {
     expect(PackSchema.safeParse(pack([{ kind: 'calculo', generator: 'subneteo', concept: 'c1' }])).success).toBe(true)
   })
   it('source.file desconocido falla', () => {
-    expect(PackSchema.safeParse(pack([{ ...rel, source: { file: 'x.pdf', page: 1 } }])).success).toBe(false)
+    expect(PackSchema.safeParse(pack([{ ...rel, source: { file: 'x.pdf', page: 1, quote: 'q' } }])).success).toBe(false)
   })
   it('keys duplicadas y tamaño de lección fallan', () => {
     const p = pack([rel])
     p.concepts.push({ key: 'c1', name: 'dup' })
     expect(PackSchema.safeParse(p).success).toBe(false)
     expect(PackSchema.safeParse(pack([])).success).toBe(false)
-    expect(PackSchema.safeParse(pack(Array(13).fill(rel))).success).toBe(false)
+  })
+  it('lección: 1 a 12 grupos distintos, no filas', () => {
+    const grp = (n: number) => Array.from({ length: n }, (_, i) => ({ ...rel, group: `g${i}` }))
+    expect(PackSchema.safeParse(pack(grp(12))).success).toBe(true)
+    expect(PackSchema.safeParse(pack(grp(13))).success).toBe(false)
+    // 3 variantes del mismo grupo por defecto (mismo concepto y tipo) cuentan como 1
+    expect(PackSchema.safeParse(pack(Array(3).fill(rel))).success).toBe(true)
+    // 36 filas en 12 grupos pasan; 37 no
+    const rows = (n: number) => Array.from({ length: n }, (_, i) => ({ ...rel, group: `g${i % 12}` }))
+    expect(PackSchema.safeParse(pack(rows(36))).success).toBe(true)
+    expect(PackSchema.safeParse(pack(rows(37))).success).toBe(false)
+  })
+  it('lessons vacío se rechaza', () => {
+    expect(PackSchema.safeParse({ ...pack([rel]), lessons: [] }).success).toBe(false)
+  })
+  it('fuente de PDF exige quote; imagen no', () => {
+    const noQuote = { ...rel, source: { file: 'a.pdf', page: 1 } }
+    expect(PackSchema.safeParse(pack([noQuote])).success).toBe(false)
+    expect(PackSchema.safeParse(pack([{ ...rel, source: { file: 'a.pdf', page: 1, quote: '  ' } }])).success).toBe(false)
+    const img = { ...pack([{ ...rel, source: { file: 'i.png', page: 1 } }]), files: [{ name: 'i.png', kind: 'imagen' }] }
+    expect(PackSchema.safeParse(img).success).toBe(true)
+  })
+  it('verified del paquete se descarta', () => {
+    const img = { ...pack([{ ...rel, source: { file: 'i.png', page: 1, verified: true } }]), files: [{ name: 'i.png', kind: 'imagen' }] }
+    const r = PackSchema.parse(img)
+    expect(r.lessons[0].exercises[0].source).toEqual({ file: 'i.png', page: 1 })
   })
   it('abierta valida keyPoints', () => {
     const ab = (k: string[]) => ({ kind: 'abierta', question: 'q', modelAnswer: 'm', keyPoints: k, concept: 'c1', source: src })

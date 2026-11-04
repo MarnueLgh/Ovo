@@ -1,11 +1,22 @@
-type K = { lessonId: string; key: string }
+import { normalizeForMatch } from './quotes'
 
-/** Clave de reemplazo: el grupo de variantes, o concepto+tipo si no tiene grupo. */
-export const replacementKey = (e: { variantGroup: string | null; conceptId: string | null; kind: string }) =>
-  e.variantGroup ?? `${e.conceptId ?? ''}:${e.kind}`
+/** Grupo de variantes efectivo de un ejercicio: el guardado, o el que el importador asigna por omisión (concepto+tipo). */
+export const effectiveGroup = (e: { variantGroup: string | null; conceptName: string | null; kind: string }) =>
+  e.variantGroup ?? `${normalizeForMatch(e.conceptName ?? '')}:${e.kind}`
 
-/** Reportados cuya (lección, clave) ya no tiene ningún ejercicio activo. */
-export function withoutReplacement<T extends K>(reported: T[], active: K[]): T[] {
-  const live = new Set(active.map((a) => `${a.lessonId}|${a.key}`))
-  return reported.filter((r) => !live.has(`${r.lessonId}|${r.key}`))
+type Reported = { id: string; lessonId: string; group: string }
+
+/**
+ * Por cada ejercicio nuevo de una lección existente, elige UN reportado de la misma lección y grupo (en el orden dado).
+ * Devuelve los ids a limpiar (`reported_at`) y los índices de `incoming` que no reemplazan a ninguno.
+ */
+export function matchReplacements(reported: Reported[], incoming: { lessonId: string; group: string }[]) {
+  const taken = new Set<string>()
+  const unmatched: number[] = []
+  incoming.forEach((n, i) => {
+    const hit = reported.find((r) => !taken.has(r.id) && r.lessonId === n.lessonId && r.group === n.group)
+    if (hit) taken.add(hit.id)
+    else unmatched.push(i)
+  })
+  return { clear: [...taken], unmatched }
 }

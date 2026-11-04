@@ -17,4 +17,8 @@ describe('quotes', () => {
     expect(findQuotePage('atenua-\r\nción', ['la atenuación'], 1)).toBe(1)
     expect(findQuotePage('atenuación', ['la atenuacion'], 1)).toBe(1)
   })
+  it('sin espacios: unpdf puede unir trozos', () => {
+    expect(findQuotePage('la fibra monomodo', ['nada', 'lafibramonomodo usa luz'], 1)).toBe(2)
+    expect(findQuotePage('la fibra monomodo', ['lafibramonomodo', 'la fibra monomodo'], 2)).toBe(2) // exacto antes que el fallback
+  })
 })

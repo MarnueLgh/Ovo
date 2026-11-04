@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PathNode } from '@/components/PathNode'
 import { StreakTile } from '@/components/StreakTile'
-import { getLessonSummary, getStreak, getSubjectPath, getSubjects } from '@/lib/queries'
+import { getLessonSummary, getStreak, getSubjectPath, getSubjects, getUnitFiles } from '@/lib/queries'
 import { requireUser } from '@/lib/supabase/server'
 
 const KIND_LABEL: Record<string, string> = { dato_clave: 'Dato clave', relacionar: 'Relacionar', caso_practico: 'Caso práctico', calculo: 'Cálculo', abierta: 'Respuesta abierta' }
@@ -19,6 +19,7 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
   const last = units.flatMap((u) => u.lessons).at(-1)
   const summary = next ? await getLessonSummary(next.lesson.id) : null
   const currentUnit = units.find((u) => u.lessons.some((l) => l.state === 'current')) ?? units[0]
+  const unitFiles = currentUnit ? await getUnitFiles(currentUnit.unit.id) : []
 
   return (
     <div className="camino" style={{ '--c': subject.color } as React.CSSProperties}>
@@ -93,6 +94,24 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
             </>
           )}
         </div>
+        {currentUnit && (
+          <div className="tile t-files in" style={{ animationDelay: '120ms' }}>
+            <h2 className="k">Archivos de la unidad {currentUnit.unit.number}</h2>
+            {unitFiles.length === 0 ? (
+              <p className="f-empty">Sin archivos todavía.</p>
+            ) : (
+              <ul className="flist">
+                {unitFiles.map((f) => (
+                  <li key={f.name}>
+                    <span aria-hidden="true">{f.kind === 'pdf' ? '📄' : '🖼️'}</span>
+                    <span className="fname">{f.name}</span>
+                    {f.pages ? <small>{f.pages} p.</small> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </aside>
     </div>
   )

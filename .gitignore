@@ -44,5 +44,5 @@ next-env.d.ts
 # ovo
 .superpowers/
 .env*.local
-material/
-contenido/
+/material/
+/contenido/

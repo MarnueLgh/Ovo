@@ -1,10 +1,11 @@
 import { and, asc, count, eq, exists, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { attempts, exercises, lessonCompletions, lessons, subjects, units } from '@/db/schema'
+import { attempts, exercises, files, lessonCompletions, lessons, subjects, units } from '@/db/schema'
 import { computeNodeStates, type NodeState } from '@/lib/path'
 import { computeStreak } from '@/lib/streak'
 import { toLocalDay } from '@/lib/time'
 import { pickVariants } from '@/lib/content/variants'
+import { replacementKey, withoutReplacement } from '@/lib/content/reportados'
 import { parsePayload } from '@/lib/exercises/types'
 import { isUuid } from '@/lib/uuid'
 
@@ -89,5 +90,38 @@ export async function getLessonForPlay(lessonId: string) {
     title: row.lesson.title,
     subjectId: row.subjectId,
     exercises: rows.map((e) => ({ id: e.id, conceptId: e.conceptId, source: e.source, payload: parsePayload(e.payload) })),
+  }
+}
+
+/** Archivos de una unidad (para la tarjeta del camino). */
+export const getUnitFiles = (unitId: string) =>
+  db.select({ name: files.name, kind: files.kind, pages: files.pages }).from(files).where(eq(files.unitId, unitId)).orderBy(asc(files.name))
+
+/** Material por materia → unidad: archivos, lecciones y ejercicios activos; más los reportados sin reemplazo (misma regla que `npm run reportados`). */
+export async function getMaterial() {
+  const [subjectRows, unitRows, fileRows, lessonRows, exRows] = await Promise.all([
+    getSubjects(),
+    db.select().from(units).orderBy(asc(units.position)),
+    db.select().from(files).orderBy(asc(files.name)),
+    db.select({ id: lessons.id, unitId: lessons.unitId }).from(lessons),
+    db.select().from(exercises),
+  ])
+  const unitOfLesson = new Map(lessonRows.map((l) => [l.id, l.unitId]))
+  const active = exRows.filter((e) => !e.retiredAt)
+  const keyed = (e: (typeof exRows)[number]) => ({ lessonId: e.lessonId, key: replacementKey(e) })
+  const pending = withoutReplacement(exRows.filter((e) => e.reportedAt).map(keyed), active.map(keyed)).length
+  return {
+    pending,
+    subjects: subjectRows.map((subject) => ({
+      subject,
+      units: unitRows
+        .filter((u) => u.subjectId === subject.id)
+        .map((unit) => ({
+          unit,
+          files: fileRows.filter((f) => f.unitId === unit.id),
+          lessons: lessonRows.filter((l) => l.unitId === unit.id).length,
+          exercises: active.filter((e) => unitOfLesson.get(e.lessonId) === unit.id).length,
+        })),
+    })),
   }
 }

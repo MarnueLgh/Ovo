@@ -27,6 +27,16 @@ La app rechaza cualquier sesión cuyo correo no sea `OVO_EMAIL` (y todas, si la 
 - Cambios de esquema: edita `src/db/schema.ts`, ejecuta `npm run db:generate` (crea `0001`, `0002`...), revisa el SQL y luego `npm run db:migrate`. Nunca uses `db:push` en la base poblada: falla.
 - `npm run db:seed` borra todo y vuelve a sembrar, así que se niega a correr si ya hay intentos o lecciones completadas. Para forzarlo (pierdes tu progreso): `npm run db:seed -- --force`.
 
+## Generar contenido
+
+El contenido lo genera Claude Code a partir de tu material (sin API de IA). La pantalla Material de la app repite estos pasos.
+
+1. Guarda los PDFs e imágenes de la unidad en `material/<Materia>/<número de unidad>/` (el nombre de la materia, exacto como en la app). `material/` y `contenido/` no se suben a GitHub.
+2. En Claude Code escribe `/generar-unidad <Materia> <número>`. La skill (`.claude/skills/generar-unidad/SKILL.md`) lee todo el material, escribe `contenido/<materia>-u<N>-<fecha>.json` y lo valida con `--dry-run`. Te muestra el resumen y los avisos antes de importar.
+3. Importa: `npm run importar -- contenido/<archivo>.json` (opciones: `--dry-run` para solo validar, `--material <dir>` para otra carpeta de material). Las lecciones nuevas se agregan al final de la unidad.
+
+**Ejercicios reportados** ("Esto está mal"): `npm run reportados` lista los que no tienen reemplazo. Pídele a Claude Code `/generar-unidad` en modo reemplazo y generará un paquete con `{ "lessonId": ... }` para cada lección, que se importa igual.
+
 ## Despliegue
 
 Sube el repositorio (privado) a GitHub, impórtalo en Vercel y carga las 4 variables de entorno de `.env.example`.

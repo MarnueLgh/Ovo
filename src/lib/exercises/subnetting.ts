@@ -37,7 +37,7 @@ export function generateSubnetting(rand: () => number): SubnetProblem {
   }
 }
 
-const norm = (s: string | undefined) => (s ?? '').trim()
+const norm = (s: string | undefined) => (s ?? '').trim().replace(/,/g, '.') // iPhone con coma decimal
 const normPrefix = (s: string | undefined) => norm(s).replace(/^\//, '')
 
 export function gradeSubnetting(answer: SubnetAnswer, input: SubnetInput) {

@@ -43,4 +43,16 @@ describe('subnetting', () => {
     const p4 = generateSubnetting(seq([0.9, 0.0]))
     expect(explainSubnetting(p4).join(' ')).toContain('2^2 = 4')
   })
+
+  it('acepta coma como separador decimal (teclado de iPhone)', () => {
+    const p4 = generateSubnetting(seq([0.9, 0.0]))
+    const r = gradeSubnetting(p4.answer, {
+      ...p4.answer,
+      mask: '255,255,255,192',
+      rows: [p4.answer.rows[0], ['192,168,100,64', ...p4.answer.rows[1].slice(1)], p4.answer.rows[2]],
+    })
+    expect(r.fields.mask).toBe(true)
+    expect(r.fields.r1c0).toBe(true)
+    expect(r.correct).toBe(16)
+  })
 })

@@ -55,7 +55,7 @@ export function CalculoSubneteo({ onResult, onContinue, saving, note }: Exercise
         {FIELDS.map(({ k, label, ph }) => (
           <div key={k} className={`f${cls(res?.fields[k])}`}>
             <label htmlFor={`${uid}${k}`}>{label}</label>
-            <input id={`${uid}${k}`} inputMode="decimal" autoComplete="off" placeholder={ph} value={top[k]} readOnly={!!res}
+            <input id={`${uid}${k}`} inputMode={k === 'mask' ? 'decimal' : 'numeric'} autoComplete="off" placeholder={ph} value={top[k]} readOnly={!!res}
               onChange={(e) => setTop({ ...top, [k]: e.target.value })} />
             {res && !res.fields[k] && <span className="fix">Era {p.answer[k]}</span>}
           </div>

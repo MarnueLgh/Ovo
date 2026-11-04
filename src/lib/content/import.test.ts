@@ -47,7 +47,7 @@ describe('planImport', () => {
   })
   it('group por omisión concept:kind; conceptos existentes se reutilizan', () => {
     const p = planImport(mk([{ title: 'L', exercises: [ab(), ab({ group: 'g' })] }]), pages, ex({ conceptIds: new Map([['Uno', 'id1']]) }))
-    expect(p.lessons[0].exercises.map((e) => e.variantGroup)).toEqual(['c1:abierta', 'g'])
+    expect(p.lessons[0].exercises.map((e) => e.variantGroup)).toEqual(['uno:abierta', 'g'])
     expect(p.newConcepts).toEqual([])
     expect(p.lessons[0].exercises[0].payload).not.toHaveProperty('concept')
   })
@@ -55,5 +55,23 @@ describe('planImport', () => {
     const p = planImport(mk([{ title: 'L', exercises: [ab({ source: { file: 'a.pdf', page: 1 } })] }]), pages, ex())
     expect(p.warnings[0]).toMatch(/sin cita/)
     expect(p.lessons[0].exercises[0].source!.verified).toBeUndefined()
+  })
+  it('group por omisión usa el nombre del concepto, no la clave', () => {
+    const m = (key: string) => PackSchema.parse({ subject: 'S', unit: { number: 9, title: 'U' }, files: [{ name: 'a.pdf', kind: 'pdf' }],
+      concepts: [{ key, name: 'Modelo OSI' }], lessons: [{ title: 'L', exercises: [ab({ concept: key })] }] })
+    const g = (k: string) => planImport(m(k), pages, ex()).lessons[0].exercises[0].variantGroup
+    expect(g('a')).toBe(g('zzz'))
+    expect(g('a')).toBe('modelo osi:abierta')
+  })
+  it('cita ya en su página: verified sin aviso', () => {
+    const p = planImport(mk([{ title: 'L', exercises: [ab({ source: { file: 'a.pdf', page: 2, quote: 'hola mundo' } })] }]), pages, ex())
+    expect(p.lessons[0].exercises[0].source).toMatchObject({ page: 2, verified: true })
+    expect(p.warnings).toEqual([])
+  })
+  it('mismo lessonId en dos bloques continúa posiciones; lessonId desconocido falla', () => {
+    const e = ex({ nextExercisePositionByLesson: new Map([[LID, 3]]) })
+    const p = planImport(mk([{ lessonId: LID, exercises: [ab(), ab()] }, { lessonId: LID, exercises: [ab()] }]), pages, e)
+    expect([...p.lessons[0].exercises, ...p.lessons[1].exercises].map((x) => x.position)).toEqual([3, 4, 5])
+    expect(() => planImport(mk([{ lessonId: LID, exercises: [ab()] }]), pages, ex())).toThrow()
   })
 })

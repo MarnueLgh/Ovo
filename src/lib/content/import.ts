@@ -1,5 +1,5 @@
 import type { ExercisePayload, Source } from '../exercises/types'
-import { findQuotePage } from './quotes'
+import { findQuotePage, normalizeForMatch } from './quotes'
 import type { Pack } from './pack'
 
 export type Existing = {
@@ -34,6 +34,9 @@ export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>
   const nameByKey = new Map(pack.concepts.map((c) => [c.key, c.name]))
   const newConcepts = [...new Set(pack.concepts.map((c) => c.name))].filter((n) => !existing.conceptIds.has(n))
   const nextEx = new Map(existing.nextExercisePositionByLesson)
+  pack.lessons.forEach((l) => {
+    if (l.lessonId !== undefined && !nextEx.has(l.lessonId)) throw new Error(`lessonId sin posiciones conocidas: ${l.lessonId}`)
+  })
   let nextLesson = existing.nextLessonPosition
 
   const lessons = pack.lessons.map((l, li): PlannedLesson => {
@@ -66,15 +69,16 @@ export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>
           }
         }
       }
-      const position = nextEx.get(key) ?? (l.lessonId !== undefined ? (existing.nextExercisePositionByLesson.get(l.lessonId) ?? 0) : 0)
+      const conceptName = nameByKey.get(concept)!
+      const position = nextEx.get(key) ?? 0
       nextEx.set(key, position + 1)
       planned.exercises.push({
         position,
-        conceptName: nameByKey.get(concept)!,
+        conceptName,
         kind: e.kind,
         payload: payload as ExercisePayload,
         source: src,
-        variantGroup: group ?? `${concept}:${e.kind}`,
+        variantGroup: group ?? `${normalizeForMatch(conceptName)}:${e.kind}`,
       })
     })
     return planned

@@ -96,7 +96,7 @@ ${USO}`)
 ${plan.errors.map((e) => `- ${e}`).join('\n')}`)
   const nuevas = plan.lessons.filter((l) => l.lessonId === undefined).length
   if (plan.existingLessons > 0 && nuevas > 0)
-    console.warn(`AVISO La unidad ya tiene ${plan.existingLessons} lecciones; este paquete agrega ${nuevas} más al final (no reemplaza las existentes).`)
+    console.warn(`AVISO La unidad ya tiene ${plan.existingLessons} ${plan.existingLessons === 1 ? 'lección' : 'lecciones'}; este paquete agrega ${nuevas} más al final (no reemplaza las existentes).`)
   if (plan.duplicateTitles.length && !force)
     throw new Fallo(`Ya existen lecciones con estos títulos en la unidad (no se escribió nada; usa --force para duplicarlas):
 ${plan.duplicateTitles.map((x) => `- ${x}`).join('\n')}`)

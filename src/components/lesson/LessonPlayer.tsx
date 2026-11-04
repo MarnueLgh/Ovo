@@ -31,10 +31,18 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
   const startedAt = useRef(0)
   const changedAt = useRef(0) // ignora un doble clic que saltaría el siguiente ejercicio
   const finishing = useRef(false)
-  useEffect(() => { startedAt.current = Date.now() }, [i])
-
-
   const ex = exercises[i]
+  const linkRef = useRef<HTMLButtonElement>(null)
+  const noRef = useRef<HTMLButtonElement>(null)
+  const refocus = useRef(false) // solo tras abrir/cerrar la confirmación, no al montar
+  useEffect(() => {
+    if (!refocus.current) return
+    refocus.current = false
+    ;(asking ? noRef : linkRef).current?.focus()
+  }, [asking])
+  useEffect(() => { startedAt.current = Date.now() }, [i, ex.id])
+
+
 
   function onResult(r: ExerciseResult) {
     if (sent.current.has(ex.id)) return
@@ -81,6 +89,7 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
     try {
       await reportExercise(ex.id)
     } catch {
+      refocus.current = true
       setAsking(false)
       setRepErr(true)
       reporting.current = false
@@ -112,10 +121,10 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
               <span>¿Quitar este ejercicio?</span>
               <button type="button" onClick={(e) => onReport(e.detail === 0)}>Sí</button>
               <span aria-hidden="true">·</span>
-              <button type="button" onClick={() => setAsking(false)}>No</button>
+              <button type="button" ref={noRef} onClick={() => { refocus.current = true; setAsking(false) }}>No</button>
             </>
           ) : (
-            <button type="button" onClick={() => setAsking(true)}>Esto está mal</button>
+            <button type="button" ref={linkRef} onClick={() => { refocus.current = true; setAsking(true) }}>Esto está mal</button>
           )}
           {repErr && <span className="err">No se pudo reportar</span>}
         </div>

@@ -147,3 +147,4 @@
 .lesson .rep button:focus-visible{outline:3px solid var(--lila-d);outline-offset:1px}
 .lesson .rep .err{color:var(--no-d);font-weight:600}
 .lesson .stage{align-content:start}
+.lesson .model.nokb{animation:none}

@@ -43,7 +43,7 @@ export function CasoPractico({ payload: p, source, onResult, onContinue, saving,
           <h2>¿Por qué no?</h2>
           <p>{result.whyWrong}</p>
           <p className="ans">✓ Respuesta correcta: <b>{right.text}.</b> {p.explanation}</p>
-          {source && <p className="src">Vuelve a leerlo en {source.file}, p. {source.page}</p>}
+          {source && <p className="src">Vuelve a leerlo en {source.file}, p. {source.page}{source.verified === false && ' · cita sin verificar'}</p>}
         </section>
       )}
 

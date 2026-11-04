@@ -42,7 +42,7 @@ export function Abierta({ payload: p, source, onResult, onContinue, saving, note
               </label>
             ))}
           </fieldset>
-          {source && <p className="src">Vuelve a leerlo en {source.file}, p. {source.page}</p>}
+          {source && <p className="src">Vuelve a leerlo en {source.file}, p. {source.page}{source.verified === false && ' · cita sin verificar'}</p>}
         </section>
       )}
 

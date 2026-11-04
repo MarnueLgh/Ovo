@@ -3,14 +3,14 @@
 .material h2{font-size:17px;font-weight:800}
 .material h3{font-size:14.5px;font-weight:700}
 .material code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:rgba(27,21,48,.08);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
-.how{background:var(--cielo);color:var(--ink);border-radius:22px;padding:16px 18px}
-.how ol{margin:8px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:14px}
-.pend{margin-top:12px;font-size:13px;font-weight:600}
-.subj{background:color-mix(in srgb,var(--c) 12%,white);border:2px solid color-mix(in srgb,var(--c) 35%,white);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.unit-card{background:#FBFAFE;border-radius:14px;padding:10px 12px;min-width:0}
-.unit-card .counts{font-size:12.5px;color:var(--mute);margin-top:2px}
-.unit-card ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
-.unit-card li{display:flex;gap:8px;align-items:baseline;font-size:13px;min-width:0}
-.fname{flex:1;min-width:0;overflow-wrap:anywhere}
-.unit-card small{color:var(--mute);font-size:12px;white-space:nowrap}
-.empty{font-size:12.5px;color:var(--mute)}
+.material .how{background:var(--cielo);color:var(--ink);border-radius:22px;padding:16px 18px}
+.material .how ol{margin:8px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.material .pend{margin-top:12px;font-size:13px;font-weight:600}
+.material .subj{background:color-mix(in srgb,var(--c) 12%,white);border:2px solid color-mix(in srgb,var(--c) 35%,white);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.material .unit-card{background:#FBFAFE;border-radius:14px;padding:10px 12px;min-width:0}
+.material .unit-card .counts{font-size:12.5px;color:var(--mute);margin-top:2px}
+.material .unit-card ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.material .unit-card li{display:flex;gap:8px;align-items:baseline;font-size:13px;min-width:0}
+.material .fname{flex:1;min-width:0;overflow-wrap:anywhere}
+.material .unit-card small{color:var(--mute);font-size:12px;white-space:nowrap}
+.material .empty{font-size:12.5px;color:var(--mute)}

@@ -35,14 +35,20 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
   const linkRef = useRef<HTMLButtonElement>(null)
   const noRef = useRef<HTMLButtonElement>(null)
   const refocus = useRef(false) // solo tras abrir/cerrar la confirmación, no al montar
+  const exRef = useRef<HTMLDivElement>(null)
+  const focusNext = useRef(false) // tras reportar, el foco pasa al siguiente ejercicio (el botón "Sí" desaparece)
   useEffect(() => {
     if (!refocus.current) return
     refocus.current = false
     ;(asking ? noRef : linkRef).current?.focus()
   }, [asking])
   useEffect(() => { startedAt.current = Date.now() }, [i, ex.id])
-
-
+  useEffect(() => {
+    if (!focusNext.current) return
+    focusNext.current = false
+    const first = exRef.current?.querySelector<HTMLElement>('button:not([disabled]),input:not([disabled]),textarea:not([disabled])')
+    ;(first ?? exRef.current)?.focus()
+  }, [ex.id])
 
   function onResult(r: ExerciseResult) {
     if (sent.current.has(ex.id)) return
@@ -99,8 +105,10 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
     setKb(viaKeyboard)
     changedAt.current = Date.now()
     reporting.current = false
-    if (i < exercises.length - 1) setExercises((l) => l.filter((e) => e.id !== ex.id)) // el siguiente ocupa el mismo índice; no se registra intento
-    else await finish()
+    if (i < exercises.length - 1) {
+      focusNext.current = true
+      setExercises((l) => l.filter((e) => e.id !== ex.id)) // el siguiente ocupa el mismo índice; no se registra intento
+    } else await finish()
   }
 
   const props = { source: ex.source, onResult, onContinue, saving, note }
@@ -128,7 +136,7 @@ export function LessonPlayer({ lessonId, subjectId, exercises: all, streak }: { 
           )}
           {repErr && <span className="err">No se pudo reportar</span>}
         </div>
-        <div key={ex.id} className={`ex${kb ? '' : ' enter'}`}>
+        <div key={ex.id} ref={exRef} tabIndex={-1} className={`ex${kb ? '' : ' enter'}`}>
           {p.kind === 'dato_clave' ? <DatoClave payload={p} {...props} />
             : p.kind === 'relacionar' ? <Relacionar payload={p} {...props} />
             : p.kind === 'abierta' ? <Abierta payload={p} {...props} />

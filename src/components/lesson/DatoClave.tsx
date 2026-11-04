@@ -22,7 +22,7 @@ export function DatoClave({ payload: p, source, onContinue, saving }: ExercisePr
         <span className="emo" aria-hidden="true">🧠</span>
         <div><b>{p.rule.headline}</b>{p.rule.text}</div>
       </div>
-      {source && <p className="src">Fuente: {source.file}, p. {source.page}</p>}
+      {source && <p className="src">Fuente: {source.file}, p. {source.page}{source.verified === false && ' · cita sin verificar'}</p>}
       <CheckBar label="Entendido" disabled={saving} onClick={onContinue} />
     </>
   )

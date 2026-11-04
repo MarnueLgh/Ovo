@@ -7,11 +7,11 @@ export function gradeCaso(p: CasoPractico, chosen: number): { correct: boolean; 
 }
 
 export function gradeRelacionar(pairs: number, firstTryCorrect: number): { score: number; correct: boolean } {
-  return { score: firstTryCorrect / pairs, correct: firstTryCorrect === pairs }
+  return { score: pairs > 0 ? firstTryCorrect / pairs : 0, correct: pairs > 0 && firstTryCorrect === pairs }
 }
 
 export function gradeAbierta(total: number, checked: number): { score: number; correct: boolean } {
-  return { score: checked / total, correct: checked === total }
+  return { score: total > 0 ? checked / total : 0, correct: total > 0 && checked === total }
 }
 
 export const newAttemptId = (): string => crypto.randomUUID()

@@ -8,4 +8,13 @@ describe('quotes', () => {
     expect(findQuotePage('fibra', ['fibra', 'fibra'], 2)).toBe(2)
     expect(findQuotePage('no existe', ['a', 'b'], 1)).toBeNull()
   })
+  it('cita vacía no coincide', () => {
+    expect(findQuotePage('', ['a'], 1)).toBeNull()
+    expect(findQuotePage('  \n ', ['a'], 1)).toBeNull()
+  })
+  it('ligaduras, CRLF y acentos', () => {
+    expect(findQuotePage('fibra', ['la ﬁbra'], 1)).toBe(1)
+    expect(findQuotePage('atenua-\r\nción', ['la atenuación'], 1)).toBe(1)
+    expect(findQuotePage('atenuación', ['la atenuacion'], 1)).toBe(1)
+  })
 })

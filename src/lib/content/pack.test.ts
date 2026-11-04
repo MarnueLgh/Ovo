@@ -27,6 +27,16 @@ describe('PackSchema', () => {
     const p = { ...pack([rel]), lessons: [{ lessonId: '3b241101-e2bb-4255-8caf-4136c566a962', exercises: [rel] }] }
     expect(PackSchema.safeParse(p).success).toBe(true)
   })
+  it('error estructural conserva la ruta del ejercicio', () => {
+    const r = PackSchema.safeParse(pack([{ ...rel, pairs: [] }]))
+    expect(r.success).toBe(false)
+    expect(r.error!.issues.some((i) => i.path.slice(0, 4).join('.') === 'lessons.0.exercises.0')).toBe(true)
+  })
+  it('lección con title y lessonId se rechaza', () => {
+    const p = { ...pack([rel]), lessons: [{ title: 'L', lessonId: '3b241101-e2bb-4255-8caf-4136c566a962', exercises: [rel] }] }
+    expect(PackSchema.safeParse(p).success).toBe(false)
+    expect(PackSchema.safeParse({ ...p, lessons: [{ exercises: [rel] }] }).success).toBe(false)
+  })
   it('concepto inexistente apunta al campo', () => {
     const r = PackSchema.safeParse(pack([{ ...rel, concept: 'zz' }]))
     expect(r.success).toBe(false)

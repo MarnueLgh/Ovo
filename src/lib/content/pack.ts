@@ -13,10 +13,15 @@ const PackExerciseSchema = z.discriminatedUnion('kind', [
 ])
 export type PackExercise = z.infer<typeof PackExerciseSchema>
 
-const Lesson = z.union([
-  z.object({ title: z.string(), exercises: z.array(PackExerciseSchema) }),
-  z.object({ lessonId: z.string().uuid(), exercises: z.array(PackExerciseSchema) }),
-])
+const Lesson = z
+  .object({
+    title: z.string().min(1).optional(),
+    lessonId: z.string().uuid().optional(),
+    exercises: z.array(PackExerciseSchema),
+  })
+  .refine((l) => (l.title !== undefined) !== (l.lessonId !== undefined), {
+    message: 'La lección necesita exactamente uno de title o lessonId',
+  })
 
 export const PackSchema = z
   .object({

@@ -41,7 +41,7 @@ export const Abierta = z.object({
   kind: z.literal('abierta'),
   question: z.string().min(1),
   modelAnswer: z.string().min(1),
-  keyPoints: z.array(z.string()).min(2).max(6),
+  keyPoints: z.array(z.string().min(1)).min(2).max(6),
 })
 
 export const Calculo = z.object({ kind: z.literal('calculo'), generator: z.literal('subneteo') })

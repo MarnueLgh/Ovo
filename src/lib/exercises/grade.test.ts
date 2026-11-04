@@ -51,6 +51,16 @@ describe('ejercicios', () => {
   })
 })
 
+describe('total cero y abierta válida', () => {
+  it('no da correcto con total 0', () => {
+    expect(gradeAbierta(0, 0)).toEqual({ score: 0, correct: false })
+    expect(gradeRelacionar(0, 0)).toEqual({ score: 0, correct: false })
+  })
+  it('parsePayload acepta abierta', () => {
+    expect(parsePayload({ kind: 'abierta', question: 'q', modelAnswer: 'm', keyPoints: ['a', 'b'] }).kind).toBe('abierta')
+  })
+})
+
 describe("gradeAbierta", () => {
   it("califica por puntos clave", () => {
     expect(gradeAbierta(4, 3)).toEqual({ score: 0.75, correct: false })

@@ -95,7 +95,7 @@ Regla general: **si la respuesta se puede verificar con código, la califica el 
 | 4.2 | 🔌 **Relacionar** | Términos a la izquierda, definiciones a la derecha. Se unen arrastrando un "cable". Si es correcto se queda verde; si no, se suelta y la tarjeta se sacude | El código | Todas |
 | 4.3 | 🛠️ **Caso práctico** | Una situación real con opción múltiple. Si fallas, "¿Por qué?" explica el error de la opción que elegiste | El código | Telecom, Administración de la FI |
 | 4.4 | 🧮 **Cálculo paso a paso** | Varios campos, como prefijo, máscara, número mágico, hosts y una tabla de subredes. Se revisa campo por campo, se muestra "Era X" en los que fallaste y "¿Por qué?" da la solución con los números de ese ejercicio. "Otro ejercicio" genera uno nuevo para practicar sin límite | El código: **un generador y un resolvedor programados por tipo de problema** | Subneteo (Telecom). Después, Cálculo y Matemáticas financieras |
-| 4.5 | ✍️ **Respuesta abierta** | "¿Qué es un contrato?" y la respondes con tus palabras | La IA (modelo barato), comparando contra el fragmento del PDF. Indica qué **elementos clave** incluiste y cuáles te faltaron, y muestra el fragmento del PDF que lo respalda | Derecho informático |
+| 4.5 | ✍️ **Respuesta abierta** | "¿Qué es un contrato?" y la respondes con tus palabras | **Modo actual (sin API): autoevaluación.** Escribes tu respuesta, la app muestra la respuesta modelo y los **elementos clave** del PDF, y tú marcas cuáles incluiste. La puntuación es la proporción marcada. *Con API, más adelante: la IA (modelo barato) compara tu respuesta contra el fragmento del PDF.* | Derecho informático |
 
 **Sobre el cálculo paso a paso.** Los generadores son código determinista, no IA. La primera versión incluye **solo subneteo**: IPv4 /24 dividido en 4, 8 o 16 subredes, como en el prototipo. Los generadores de Cálculo y Matemáticas financieras se agregan después, uno por tipo de problema.
 
@@ -110,6 +110,24 @@ Regla general: **si la respuesta se puede verificar con código, la califica el 
 - **"Repasar"** arma una lección corta con ejercicios nuevos o variados sobre esos conceptos.
 
 ## 6. De dónde sale el contenido (IA)
+
+### 6.0 Modo actual: generación con Claude Code (decidido el 4 de noviembre de 2026)
+
+Por ahora **no se usa ninguna API de IA**. El usuario genera el contenido con su membresía de Claude, a través de Claude Code. La API (sección 6.1) se agrega después sin rehacer nada, porque solo cambia **quién produce el JSON**.
+
+**Flujo:**
+1. El usuario guarda los PDFs y las fotos de una unidad en una carpeta local del proyecto: `material/<materia>/<unidad>/`.
+2. Le pide a Claude Code que genere la unidad. Claude Code lee el material y escribe un **paquete JSON** de la unidad en `contenido/`. Se aplican las mismas reglas de esta sección: todo sale solo del material y cada ejercicio cita su página.
+3. Un script (`npm run importar`) valida el paquete con los mismos esquemas de la app, verifica las citas contra el texto del PDF y lo guarda en Postgres. Si una unidad ya tiene lecciones, las nuevas **se agregan al final**.
+4. El contenido aparece en la app, tanto en la laptop como en el iPhone.
+
+**Diferencias con el modo API:**
+- **Respuesta abierta:** se resuelve con autoevaluación (ver 4.5).
+- **"Esto está mal":** el ejercicio sale de circulación y queda marcado como reportado. Claude Code genera el reemplazo la próxima vez que se le pida, leyendo la lista de reportados.
+- **Subir material desde el iPhone:** no está incluido en este modo. El material vive en la laptop.
+- **Privacidad:** `material/` y `contenido/` no se suben a GitHub.
+
+### 6.1 Modo API (más adelante)
 
 **Regla principal, pedida por el usuario: todo sale únicamente del material subido.** Esto incluye el texto, las imágenes, los diagramas y los apuntes a mano. La IA **no usa su propio conocimiento**:
 - Cada pregunta, respuesta correcta, opción incorrecta, explicación de "¿Por qué?" y elemento clave de una respuesta abierta debe estar respaldado por una página del material.

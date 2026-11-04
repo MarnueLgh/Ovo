@@ -85,9 +85,10 @@ async function main() {
   if (!process.argv.includes('--force')) {
     const [a] = await db.select({ n: sql<number>`count(*)::int` }).from(s.attempts)
     const [c] = await db.select({ n: sql<number>`count(*)::int` }).from(s.lessonCompletions)
-    if (a.n > 0 || c.n > 0) {
+    const [im] = await db.select({ n: sql<number>`count(*)::int` }).from(s.imports)
+    if (a.n > 0 || c.n > 0 || im.n > 0) {
       console.error(
-        `Seed cancelado: hay ${a.n} intentos y ${c.n} lecciones completadas, y el seed BORRA todo (incluido tu progreso). ` +
+        `Seed cancelado: hay ${a.n} intentos, ${c.n} lecciones completadas y ${im.n} paquetes importados, y el seed BORRA todo (incluido tu progreso y el contenido importado). ` +
           'Si de verdad quieres empezar de cero, corre: npm run db:seed -- --force',
       )
       process.exitCode = 1

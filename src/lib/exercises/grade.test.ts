@@ -29,6 +29,12 @@ describe('ejercicios', () => {
         options: [{ text: 'a', correct: true }, { text: 'b', correct: false }] }),
     ).toThrow()
   })
+  it('rechaza un caso de una sola opción', () => {
+    expect(() =>
+      parsePayload({ kind: 'caso_practico', question: 'q', scene: 's', explanation: 'e',
+        options: [{ text: 'a', correct: true }] }),
+    ).toThrow()
+  })
   it('acepta un caso válido', () => {
     expect(parsePayload(caso)).toEqual(caso)
   })

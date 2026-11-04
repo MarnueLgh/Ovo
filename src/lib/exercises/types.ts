@@ -22,7 +22,7 @@ export const CasoPractico = z
     kind: z.literal('caso_practico'),
     question: z.string(),
     scene: z.string(),
-    options: z.array(z.object({ text: z.string(), correct: z.boolean(), whyWrong: z.string().optional() })),
+    options: z.array(z.object({ text: z.string(), correct: z.boolean(), whyWrong: z.string().optional() })).min(2),
     explanation: z.string(),
   })
   .refine((c) => c.options.filter((o) => o.correct).length === 1, {

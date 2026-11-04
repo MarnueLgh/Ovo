@@ -1,6 +1,7 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
+import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { parsePayload, type Source } from '../lib/exercises/types'
@@ -81,6 +82,18 @@ const payloads = [
 ].map(parsePayload)
 
 async function main() {
+  if (!process.argv.includes('--force')) {
+    const [a] = await db.select({ n: sql<number>`count(*)::int` }).from(s.attempts)
+    const [c] = await db.select({ n: sql<number>`count(*)::int` }).from(s.lessonCompletions)
+    if (a.n > 0 || c.n > 0) {
+      console.error(
+        `Seed cancelado: hay ${a.n} intentos y ${c.n} lecciones completadas, y el seed BORRA todo (incluido tu progreso). ` +
+          'Si de verdad quieres empezar de cero, corre: npm run db:seed -- --force',
+      )
+      process.exitCode = 1
+      return
+    }
+  }
   // orden inverso a las FK
   await db.delete(s.attempts)
   await db.delete(s.lessonCompletions)

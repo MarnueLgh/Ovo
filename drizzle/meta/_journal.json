@@ -8,6 +8,13 @@
       "when": 1793803715299,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793808014796,
+      "tag": "0001_little_alice",
+      "breakpoints": true
     }
   ]
 }

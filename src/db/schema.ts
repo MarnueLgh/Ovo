@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, real, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, integer, jsonb, pgTable, real, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import type { ExercisePayload, Source } from '../lib/exercises/types'
 
 const id = () => uuid('id').primaryKey().defaultRandom()
@@ -17,7 +17,7 @@ export const units = pgTable('units', {
   number: integer('number').notNull(),
   title: text('title').notNull(),
   position: integer('position').notNull(),
-}).enableRLS()
+}, (t) => [unique().on(t.subjectId, t.number)]).enableRLS()
 
 export const concepts = pgTable('concepts', {
   id: id(),
@@ -30,7 +30,7 @@ export const lessons = pgTable('lessons', {
   unitId: uuid('unit_id').notNull().references(() => units.id),
   position: integer('position').notNull(),
   title: text('title').notNull(),
-}).enableRLS()
+}, (t) => [unique().on(t.unitId, t.position)]).enableRLS()
 
 export const exercises = pgTable('exercises', {
   id: id(),
@@ -41,7 +41,9 @@ export const exercises = pgTable('exercises', {
   payload: jsonb('payload').$type<ExercisePayload>().notNull(),
   source: jsonb('source').$type<Source>(),
   retiredAt: timestamp('retired_at', { withTimezone: true }),
-}).enableRLS()
+  variantGroup: text('variant_group'),
+  reportedAt: timestamp('reported_at', { withTimezone: true }),
+}, (t) => [unique().on(t.lessonId, t.position)]).enableRLS()
 
 export const attempts = pgTable('attempts', {
   id: uuid('id').primaryKey(),
@@ -57,4 +59,19 @@ export const lessonCompletions = pgTable('lesson_completions', {
   id: id(),
   lessonId: uuid('lesson_id').notNull().references(() => lessons.id),
   completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS()
+
+export const files = pgTable('files', {
+  id: id(),
+  unitId: uuid('unit_id').notNull().references(() => units.id),
+  name: text('name').notNull(),
+  kind: text('kind').notNull(), // 'pdf' | 'imagen'
+  pages: integer('pages'),
+}, (t) => [unique().on(t.unitId, t.name)]).enableRLS()
+
+export const imports = pgTable('imports', {
+  id: id(),
+  hash: text('hash').notNull().unique(),
+  file: text('file').notNull(),
+  importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS()

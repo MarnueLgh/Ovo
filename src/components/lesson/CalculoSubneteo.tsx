@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { explainSubnetting, generateSubnetting, gradeSubnetting, type SubnetProblem } from '@/lib/exercises/subnetting'
 import { CheckBar, type ExerciseProps } from './CheckBar'
 
@@ -17,15 +17,21 @@ const mk = () => generateSubnetting(Math.random)
 
 export function CalculoSubneteo({ onResult, onContinue, saving, note }: ExerciseProps<unknown>) {
   const uid = useId()
-  const [p, setP] = useState<SubnetProblem>(mk)
+  const [p, setP] = useState<SubnetProblem | null>(null)
   const [top, setTop] = useState(emptyTop)
   const [rows, setRows] = useState(emptyRows)
   const [res, setRes] = useState<ReturnType<typeof gradeSubnetting> | null>(null)
   const [why, setWhy] = useState<{ open: boolean; kb: boolean }>({ open: false, kb: false })
   const checked = useRef(false)
 
+  // se genera al montar (no en el render) para no desajustar la hidratación
+  useEffect(() => {
+    const t = setTimeout(() => setP(mk()), 0)
+    return () => clearTimeout(t)
+  }, [])
+
   function check() {
-    if (checked.current) return
+    if (checked.current || !p) return
     checked.current = true
     const r = gradeSubnetting(p.answer, { ...top, rows })
     setRes(r)
@@ -40,6 +46,8 @@ export function CalculoSubneteo({ onResult, onContinue, saving, note }: Exercise
     setRes(null)
     setWhy({ open: false, kb: false })
   }
+
+  if (!p) return <span className="kind">🧮 Cálculo paso a paso · Subneteo</span>
 
   const cls = (ok: boolean | undefined) => (res ? (ok ? ' ok' : ' no') : '')
   const empty = !Object.values(top).some((v) => v.trim()) && !rows.some((r) => r.some((v) => v.trim()))

@@ -8,7 +8,7 @@ App de estudio personal (un solo usuario) hecha con Next.js, Supabase y Drizzle.
 npm install
 cp .env.example .env.local   # completa DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY y OVO_EMAIL
 npm run db:push              # SOLO en una base de datos nueva y vacía (ver "Base de datos")
-npm run db:seed              # OJO: BORRA los datos existentes y vuelve a sembrar
+npm run db:seed              # OJO: BORRA los datos existentes y vuelve a sembrar (se niega si hay intentos; ver "Base de datos")
 npm run dev
 npm test
 ```
@@ -23,8 +23,9 @@ La app rechaza cualquier sesión cuyo correo no sea `OVO_EMAIL` (y todas, si la 
 ## Base de datos
 
 - `npm run db:push` solo para una base de datos nueva y vacía.
-- La base real ya tiene aplicada la migración `0000` (`drizzle/0000_baseline.sql`; se creó con `push` más el SQL de RLS). Antes de usar `migrate` hay que marcar `0000` como aplicada en `drizzle.__drizzle_migrations`.
-- Cambios de esquema futuros: edita `src/db/schema.ts`, ejecuta `npm run db:generate` (crea `0001`, `0002`...) y luego `npm run db:migrate`.
+- La base real ya tiene aplicada `0000` (`drizzle/0000_baseline.sql`) y quedó marcada en `drizzle.__drizzle_migrations` con `npm run db:marcar-baseline` (idempotente; solo hace falta en una base que ya tenga ese esquema sin registro).
+- Cambios de esquema: edita `src/db/schema.ts`, ejecuta `npm run db:generate` (crea `0001`, `0002`...), revisa el SQL y luego `npm run db:migrate`. Nunca uses `db:push` en la base poblada: falla.
+- `npm run db:seed` borra todo y vuelve a sembrar, así que se niega a correr si ya hay intentos o lecciones completadas. Para forzarlo (pierdes tu progreso): `npm run db:seed -- --force`.
 
 ## Despliegue
 

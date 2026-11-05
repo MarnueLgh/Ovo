@@ -115,7 +115,7 @@ export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>
     })
     planned.groups = planned.kind === 'estudio' ? planned.exercises.length : new Set(planned.exercises.map((e) => e.variantGroup)).size
     if (planned.title !== undefined && planned.kind === 'practica' && planned.groups < MIN_PER_GAME)
-      warnings.push(`Lección "${planned.title}": solo ${planned.groups} ejercicios por partida (se recomiendan al menos ${MIN_PER_GAME})`)
+      warnings.push(`Lección "${planned.title}": solo ${plural(planned.groups, 'ejercicio', 'ejercicios')} por partida (se recomiendan al menos ${MIN_PER_GAME})`)
     return planned
   })
 

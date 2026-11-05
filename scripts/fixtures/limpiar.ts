@@ -35,6 +35,7 @@ async function main() {
       }
       await tx.delete(s.concepts).where(eq(s.concepts.unitId, unit.id))
       await tx.delete(s.files).where(eq(s.files.unitId, unit.id))
+      await tx.delete(s.sections).where(eq(s.sections.unitId, unit.id))
       await tx.delete(s.units).where(eq(s.units.id, unit.id))
     }
     await tx.delete(s.imports).where(or(eq(s.imports.hash, hash), eq(s.imports.file, FIXTURE), like(s.imports.file, '%fixtures%paquete-ejemplo.json')))

@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { completeLesson, recordAttempt, reportExercise } from '@/app/(lesson)/leccion/[lessonId]/actions'
 import { newAttemptId } from '@/lib/exercises/grade'
-import type { ExercisePayload, Source } from '@/lib/exercises/types'
+import { isStudyKind, type ExercisePayload, type Source } from '@/lib/exercises/types'
+import { StudyCard } from '@/components/estudio/StudyCard'
+import type { StudyPayload } from '@/components/estudio/StudyBody'
 import { Abierta } from './Abierta'
 import { CalculoSubneteo } from './CalculoSubneteo'
 import { CasoPractico } from './CasoPractico'
@@ -16,7 +18,7 @@ import './leccion.css'
 
 type Ex = { id: string; conceptId: string | null; source: Source | null; payload: ExercisePayload }
 
-type Props = { lessonId: string; subjectId: string; exercises: Ex[]; streak: number }
+type Props = { lessonId: string; subjectId: string; exercises: Ex[]; streak: number; kind?: 'estudio' | 'practica' }
 
 /** Next 16 (cacheComponents) conserva la página oculta con <Activity>: sin este key, volver a abrir la lección
  *  mostraba la partida anterior. bfcacheId cambia en cada navegación nueva (Link/push) y se mantiene con atrás/adelante. */
@@ -25,7 +27,8 @@ export function LessonPlayer(props: Props) {
   return <LessonRun key={bfcacheId} {...props} />
 }
 
-function LessonRun({ lessonId, subjectId, exercises: all, streak }: Props) {
+function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practica' }: Props) {
+  const study = kind === 'estudio'
   const router = useRouter()
   const [i, setI] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -125,8 +128,8 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak }: Props) {
   return (
     <div className="lesson">
       <header className="top">
-        <Link className="x" href={`/materia/${subjectId}`} aria-label="Salir de la lección">✕</Link>
-        <div className="prog" role="progressbar" aria-label="Progreso de la lección" aria-valuemin={0} aria-valuemax={exercises.length} aria-valuenow={i}>
+        <Link className="x" href={`/materia/${subjectId}`} aria-label={study ? 'Salir del estudio' : 'Salir de la lección'}>✕</Link>
+        <div className="prog" role="progressbar" aria-label={study ? 'Progreso del estudio' : 'Progreso de la lección'} aria-valuemin={0} aria-valuemax={exercises.length} aria-valuenow={i}>
           {exercises.map((e, j) => <span key={e.id} className={j < i ? 'done' : j === i ? 'on' : undefined} />)}
         </div>
         <span className="streak"><span aria-hidden="true">🔥 {streak}</span><span className="sr">Racha: {streak} {streak === 1 ? 'día' : 'días'}</span></span>
@@ -135,7 +138,7 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak }: Props) {
         <div className="rep" aria-live="polite">
           {asking ? (
             <>
-              <span>¿Quitar este ejercicio?</span>
+              <span>{study ? '¿Quitar esta tarjeta?' : '¿Quitar este ejercicio?'}</span>
               <button type="button" onClick={(e) => onReport(e.detail === 0)}>Sí</button>
               <span aria-hidden="true">·</span>
               <button type="button" ref={noRef} onClick={() => { refocus.current = true; setAsking(false) }}>No</button>
@@ -146,11 +149,13 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak }: Props) {
           {repErr && <span className="err">No se pudo reportar</span>}
         </div>
         <div key={ex.id} ref={exRef} tabIndex={-1} className={`ex${kb ? '' : ' enter'}`}>
-          {p.kind === 'dato_clave' ? <DatoClave payload={p} {...props} />
+          {isStudyKind(p.kind) ? <StudyCard payload={p as StudyPayload} source={ex.source} last={i === exercises.length - 1} saving={saving} onContinue={onContinue} />
+            : p.kind === 'dato_clave' ? <DatoClave payload={p} {...props} />
             : p.kind === 'relacionar' ? <Relacionar payload={p} {...props} />
             : p.kind === 'abierta' ? <Abierta payload={p} {...props} />
             : p.kind === 'caso_practico' ? <CasoPractico payload={p} {...props} />
-            : <CalculoSubneteo payload={p} {...props} />}
+            : p.kind === 'calculo' ? <CalculoSubneteo payload={p} {...props} />
+            : null}
         </div>
       </main>
     </div>

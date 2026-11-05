@@ -1,0 +1,75 @@
+/* Tarjetas de estudio (reproductor y modo apunte) */
+.study .kind{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;font-weight:700;color:var(--cielo-d);background:#E3F1FD;padding:5px 12px;border-radius:99px;margin-bottom:12px}
+.study h1,.study h2{font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-bottom:10px;text-wrap:balance}
+.study h1{font-size:28px}
+.study h2{font-size:21px}
+.study .body{font-size:16px;line-height:1.6;margin-bottom:12px;max-width:68ch;text-wrap:pretty}
+.study .bul,.study .items{padding-left:20px;font-size:15.5px;line-height:1.6;max-width:68ch}
+.study .bul li,.study .items li{margin-bottom:6px}
+.study .items{background:#fff;border:2px solid var(--line);border-radius:20px;padding:16px 18px 16px 36px}
+.study .hint{color:var(--mute);font-size:14px;margin-bottom:12px}
+.study .layout{font-size:12.5px;font-weight:700;color:var(--mute);margin:-4px 0 12px}
+
+/* Flashcard que se voltea */
+.study .fc{display:grid;width:100%;min-height:220px;border:0;padding:0;background:none;cursor:pointer;perspective:1000px;font:inherit;color:inherit;text-align:center}
+.study .fc .face{grid-area:1/1;display:grid;place-items:center;padding:28px 22px;border-radius:24px;backface-visibility:hidden;transition:transform 280ms var(--ease)}
+.study .fc .front{background:#E3F1FD;box-shadow:0 6px 0 #BFDDF6}
+.study .fc .front h1,.study .fc .front h2{margin:0}
+.study .fc .back{background:#fff;border:2px solid var(--line);transform:rotateY(180deg)}
+.study .fc .back .body{margin:0}
+.study .fc.flipped .front{transform:rotateY(-180deg)}
+.study .fc.flipped .back{transform:rotateY(0)}
+.study .fc:focus-visible{outline:3px solid var(--lila-d);outline-offset:4px;border-radius:24px}
+.study .fc-open{background:#E3F1FD;border-radius:24px;padding:18px 20px}
+.study .fc-open .body{margin:0}
+@media (prefers-reduced-motion:reduce){
+  .study .fc .face{transition:none}
+}
+
+/* Comparación */
+.study .cmp-scroll{overflow-x:auto;border-radius:20px;border:2px solid var(--line);background:#fff}
+.study .cmp-scroll:focus-visible{outline:3px solid var(--lila-d);outline-offset:2px}
+.study .cmp{border-collapse:collapse;width:100%;min-width:420px;font-size:14.5px;line-height:1.45}
+.study .cmp th,.study .cmp td{padding:12px 14px;text-align:left;vertical-align:top;border-bottom:1.5px solid var(--line)}
+.study .cmp thead th{background:#F3F0FA;font-weight:800}
+.study .cmp tbody th{font-weight:700;color:var(--ink);width:28%}
+.study .cmp tbody tr:last-child>*{border-bottom:0}
+
+/* Diagramas: proceso, línea de tiempo, ciclo */
+.study .flow{list-style:none;padding:0;display:flex;flex-direction:column;gap:0}
+.study .flow li{display:flex;gap:14px;align-items:flex-start;position:relative;padding-bottom:18px}
+.study .flow li:last-child{padding-bottom:0}
+.study .flow .dot{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;background:var(--cielo);color:var(--ink);position:relative;z-index:1}
+.study .flow li::before{content:"";position:absolute;left:16px;top:34px;bottom:0;width:2px;background:var(--line)}
+.study .flow li:last-child::before{display:none}
+.study .flow div{background:#fff;border:2px solid var(--line);border-radius:16px;padding:10px 14px;flex:1;min-width:0}
+.study .flow b,.study .tree b{display:block;font-size:15.5px}
+.study .flow div span,.study .tree .tn span{display:block;color:var(--mute);font-size:14px;line-height:1.5;margin-top:2px}
+.study .flow.linea_tiempo .dot{width:16px;height:16px;margin:9px;background:var(--lila-d)}
+.study .flow.linea_tiempo li::before{left:16px;top:26px}
+.study .flow .back .dot{background:var(--sol)}
+.study .flow .back div{border-style:dashed;color:var(--mute);font-weight:600}
+
+/* Jerarquía */
+.study .tree,.study .tree ul{list-style:none;padding-left:0}
+.study .tree ul{margin-left:16px;padding-left:16px;border-left:2px solid var(--line)}
+.study .tree li{margin:8px 0}
+.study .tree .tn{background:#fff;border:2px solid var(--line);border-radius:14px;padding:9px 13px}
+.study .tree>li>.tn{background:#E3F1FD;border-color:#BFDDF6}
+
+@media (max-width:640px){
+  .study h1{font-size:24px}
+}
+
+/* Modo apunte: todas las tarjetas en una página */
+.apunte-page{min-height:100dvh;background:var(--bg);padding:20px 20px calc(48px + env(safe-area-inset-bottom))}
+.apunte-page main{width:min(760px,100%);margin:0 auto}
+.ap-top{width:min(760px,100%);margin:0 auto 18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ap-top a{font-weight:700;font-size:14px;color:var(--ink);text-decoration:none;padding:10px 14px;border-radius:999px;background:#fff;border:2px solid var(--line);min-height:44px;display:inline-flex;align-items:center}
+.ap-top a:focus-visible{outline:3px solid var(--lila-d);outline-offset:2px}
+.ap-top .ap-study{background:var(--cielo);border-color:var(--cielo)}
+.ap-kicker{font-size:13px;font-weight:700;color:var(--cielo-d)}
+.ap-title{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:2px 0 22px;text-wrap:balance}
+.ap-card{padding:22px 0;border-top:2px solid var(--line)}
+.ap-src{font-size:12px;color:var(--mute);margin-top:10px}
+@media (max-width:640px){.ap-title{font-size:26px}}

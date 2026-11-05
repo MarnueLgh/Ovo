@@ -9,7 +9,7 @@ async function Leccion({ params }: { params: Promise<{ lessonId: string }> }) {
   await requireUser()
   const [lesson, streak] = await Promise.all([getLessonForPlay(lessonId), getStreak()])
   if (!lesson) notFound()
-  return <LessonPlayer lessonId={lessonId} subjectId={lesson.subjectId} exercises={lesson.exercises} streak={streak.current} />
+  return <LessonPlayer lessonId={lessonId} subjectId={lesson.subjectId} exercises={lesson.exercises} streak={streak.current} kind={lesson.kind} />
 }
 
 export default function Page({ params }: PageProps<'/leccion/[lessonId]'>) {

@@ -103,6 +103,7 @@ async function main() {
     await tx.delete(s.lessons)
     await tx.delete(s.concepts)
     await tx.delete(s.files)
+    await tx.delete(s.sections)
     await tx.delete(s.imports)
     await tx.delete(s.units)
     await tx.delete(s.subjects)

@@ -31,7 +31,7 @@ export function StudyBody({ payload: p, open = false, heading = 'h1' }: { payloa
           <div className="cmp-scroll" tabIndex={0} role="region" aria-label={`Tabla: ${p.title}`}>
             <table className="cmp">
               <thead>
-                <tr><td /> {p.columns.map((c, i) => <th key={i} scope="col">{c}</th>)}</tr>
+                <tr><td />{p.columns.map((c, i) => <th key={i} scope="col">{c}</th>)}</tr>
               </thead>
               <tbody>
                 {p.rows.map((r, i) => (
@@ -94,7 +94,7 @@ function Flip({ p, open, H }: { p: Flashcard; open: boolean; H: 'h1' | 'h2' }) {
     <>
       <p className="hint">Piensa la respuesta y toca la tarjeta para voltearla.</p>
       <button type="button" className={`fc${flipped ? ' flipped' : ''}`} aria-pressed={flipped} onClick={() => setFlipped((f) => !f)}>
-        <span className="face front" aria-hidden={flipped}><H>{p.front}</H></span>
+        <span className="face front" aria-hidden={flipped}><span className="fc-q">{p.front}</span></span>
         <span className="face back" aria-hidden={!flipped}><span className="body">{p.back}</span></span>
         <span className="sr">{flipped ? `Respuesta: ${p.back}` : 'Toca para ver la respuesta'}</span>
       </button>

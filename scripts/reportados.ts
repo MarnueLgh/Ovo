@@ -16,7 +16,9 @@ const mainText = (p: ExercisePayload): string =>
   p.kind === 'dato_clave' ? p.title
   : p.kind === 'relacionar' ? `${p.prompt} (${p.pairs[0].term}: ${p.pairs[0].definition})`
   : p.kind === 'calculo' ? 'Cálculo de subneteo'
-  : p.question
+  : p.kind === 'flashcard' ? p.front
+  : p.kind === 'caso_practico' || p.kind === 'abierta' ? p.question
+  : p.title
 
 async function main() {
   const rows = await db

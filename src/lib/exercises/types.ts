@@ -46,13 +46,62 @@ export const Abierta = z.object({
 
 export const Calculo = z.object({ kind: z.literal('calculo'), generator: z.literal('subneteo') })
 
-export const ExercisePayloadSchema = z.discriminatedUnion('kind', [DatoClave, Relacionar, CasoPractico, Calculo, Abierta])
+// ── Tarjetas de estudio (no se califican) ──
+const txt = z.string().min(1)
+
+export const Concepto = z.object({ kind: z.literal('concepto'), title: txt, body: txt, bullets: z.array(txt).max(12).optional() })
+
+export const Flashcard = z.object({ kind: z.literal('flashcard'), front: txt, back: txt })
+
+export const Comparacion = z
+  .object({
+    kind: z.literal('comparacion'),
+    title: txt,
+    columns: z.array(txt).min(2).max(4),
+    rows: z.array(z.object({ label: txt, cells: z.array(txt) })).min(1).max(12),
+  })
+  .refine((c) => c.rows.every((r) => r.cells.length === c.columns.length), {
+    message: 'Cada fila necesita una celda por columna',
+  })
+
+export type Nodo = { label: string; detail?: string; children?: Nodo[] }
+const depth = (n: Nodo): number => 1 + Math.max(0, ...(n.children ?? []).map(depth))
+const NodoSchema: z.ZodType<Nodo> = z.lazy(() =>
+  z.object({ label: txt, detail: txt.optional(), children: z.array(NodoSchema).min(1).max(8).optional() }),
+)
+
+export const Diagrama = z
+  .object({
+    kind: z.literal('diagrama'),
+    title: txt,
+    layout: z.enum(['proceso', 'linea_tiempo', 'ciclo', 'jerarquia']),
+    nodes: z.array(NodoSchema).min(1).max(12),
+  })
+  .refine((d) => d.layout === 'jerarquia' || d.nodes.every((n) => !n.children), {
+    message: 'Solo la jerarquía admite children',
+  })
+  .refine((d) => d.layout === 'jerarquia' || d.nodes.length >= 2, { message: 'Se necesitan al menos 2 nodos' })
+  .refine((d) => d.nodes.every((n) => depth(n) <= 3), { message: 'La jerarquía admite hasta 3 niveles' })
+
+export const Lista = z.object({ kind: z.literal('lista'), title: txt, intro: txt.optional(), items: z.array(txt).min(2).max(15) })
+
+export const STUDY_KINDS = ['concepto', 'flashcard', 'comparacion', 'diagrama', 'lista'] as const
+export const isStudyKind = (k: string) => (STUDY_KINDS as readonly string[]).includes(k)
+
+export const ExercisePayloadSchema = z.discriminatedUnion('kind', [
+  DatoClave, Relacionar, CasoPractico, Calculo, Abierta, Concepto, Flashcard, Comparacion, Diagrama, Lista,
+])
 
 export type DatoClave = z.infer<typeof DatoClave>
 export type Relacionar = z.infer<typeof Relacionar>
 export type CasoPractico = z.infer<typeof CasoPractico>
 export type Abierta = z.infer<typeof Abierta>
 export type Calculo = z.infer<typeof Calculo>
+export type Concepto = z.infer<typeof Concepto>
+export type Flashcard = z.infer<typeof Flashcard>
+export type Comparacion = z.infer<typeof Comparacion>
+export type Diagrama = z.infer<typeof Diagrama>
+export type Lista = z.infer<typeof Lista>
 export type ExercisePayload = z.infer<typeof ExercisePayloadSchema>
 
 export const SourceSchema = z.object({

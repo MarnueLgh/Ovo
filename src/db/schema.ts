@@ -25,11 +25,20 @@ export const concepts = pgTable('concepts', {
   name: text('name').notNull(),
 }).enableRLS()
 
+export const sections = pgTable('sections', {
+  id: id(),
+  unitId: uuid('unit_id').notNull().references(() => units.id),
+  position: integer('position').notNull(),
+  title: text('title').notNull(),
+}, (t) => [unique().on(t.unitId, t.position)]).enableRLS()
+
 export const lessons = pgTable('lessons', {
   id: id(),
   unitId: uuid('unit_id').notNull().references(() => units.id),
   position: integer('position').notNull(),
   title: text('title').notNull(),
+  sectionId: uuid('section_id').references(() => sections.id),
+  kind: text('kind').notNull().default('practica'), // 'estudio' | 'practica'
 }, (t) => [unique().on(t.unitId, t.position)]).enableRLS()
 
 export const exercises = pgTable('exercises', {
@@ -59,6 +68,7 @@ export const lessonCompletions = pgTable('lesson_completions', {
   id: id(),
   lessonId: uuid('lesson_id').notNull().references(() => lessons.id),
   completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+  skipped: boolean('skipped').notNull().default(false), // estudio saltado: desbloquea pero no cuenta para la racha
 }).enableRLS()
 
 export const files = pgTable('files', {

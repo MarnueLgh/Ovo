@@ -53,16 +53,15 @@ export const Concepto = z.object({ kind: z.literal('concepto'), title: txt, body
 
 export const Flashcard = z.object({ kind: z.literal('flashcard'), front: txt, back: txt })
 
-export const Comparacion = z
-  .object({
-    kind: z.literal('comparacion'),
-    title: txt,
-    columns: z.array(txt).min(2).max(4),
-    rows: z.array(z.object({ label: txt, cells: z.array(txt) })).min(1).max(12),
-  })
-  .refine((c) => c.rows.every((r) => r.cells.length === c.columns.length), {
-    message: 'Cada fila necesita una celda por columna',
-  })
+export const ComparacionBase = z.object({
+  kind: z.literal('comparacion'),
+  title: txt,
+  columns: z.array(txt).min(2).max(4),
+  rows: z.array(z.object({ label: txt, cells: z.array(txt) })).min(1).max(12),
+})
+export const withComparacionChecks = <T extends z.ZodType<z.infer<typeof ComparacionBase>>>(s: T) =>
+  s.refine((c) => c.rows.every((r) => r.cells.length === c.columns.length), { message: 'Cada fila necesita una celda por columna' })
+export const Comparacion = withComparacionChecks(ComparacionBase)
 
 export type Nodo = { label: string; detail?: string; children?: Nodo[] }
 const depth = (n: Nodo): number => 1 + Math.max(0, ...(n.children ?? []).map(depth))
@@ -70,18 +69,20 @@ const NodoSchema: z.ZodType<Nodo> = z.lazy(() =>
   z.object({ label: txt, detail: txt.optional(), children: z.array(NodoSchema).min(1).max(8).optional() }),
 )
 
-export const Diagrama = z
-  .object({
-    kind: z.literal('diagrama'),
-    title: txt,
-    layout: z.enum(['proceso', 'linea_tiempo', 'ciclo', 'jerarquia']),
-    nodes: z.array(NodoSchema).min(1).max(12),
-  })
+export const DiagramaBase = z.object({
+  kind: z.literal('diagrama'),
+  title: txt,
+  layout: z.enum(['proceso', 'linea_tiempo', 'ciclo', 'jerarquia']),
+  nodes: z.array(NodoSchema).min(1).max(12),
+})
+export const withDiagramaChecks = <T extends z.ZodType<z.infer<typeof DiagramaBase>>>(s: T) =>
+  s
   .refine((d) => d.layout === 'jerarquia' || d.nodes.every((n) => !n.children), {
     message: 'Solo la jerarquía admite children',
   })
   .refine((d) => d.layout === 'jerarquia' || d.nodes.length >= 2, { message: 'Se necesitan al menos 2 nodos' })
   .refine((d) => d.nodes.every((n) => depth(n) <= 3), { message: 'La jerarquía admite hasta 3 niveles' })
+export const Diagrama = withDiagramaChecks(DiagramaBase)
 
 export const Lista = z.object({ kind: z.literal('lista'), title: txt, intro: txt.optional(), items: z.array(txt).min(2).max(15) })
 

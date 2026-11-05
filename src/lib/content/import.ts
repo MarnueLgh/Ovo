@@ -1,4 +1,4 @@
-import type { ExercisePayload, Source } from '../exercises/types'
+import { isStudyKind, type ExercisePayload, type Source } from '../exercises/types'
 import { findQuotePage, normalizeForMatch } from './quotes'
 import { matchReplacements } from './reportados'
 import type { Pack } from './pack'
@@ -18,12 +18,14 @@ export type PlannedExercise = {
   kind: string
   payload: ExercisePayload
   source: Source | null
-  variantGroup: string
+  variantGroup: string | null // null en tarjetas de estudio: se muestran todas
 }
 export type PlannedLesson = {
   lessonId?: string
   position?: number
   title?: string
+  kind: 'estudio' | 'practica'
+  section?: string
   exercises: PlannedExercise[]
   groups: number // ejercicios por partida: grupos de variantes distintos
 }
@@ -40,6 +42,13 @@ export type Plan = {
   existingLessons: number
   duplicateTitles: string[] // títulos nuevos que ya existen en la unidad
   clearReported: string[] // reportados que estos ejercicios reemplazan
+  sections: string[] // títulos de subsección en orden de aparición
+  coverage: { file: string; pages: number[] }[] // páginas con texto que ninguna tarjeta de estudio cita
+}
+
+/** Páginas (1-based) con texto que no aparecen en `cited`. Portadas vacías o escaneos no cuentan. */
+export function uncoveredPages(pages: string[], cited: Set<number>): number[] {
+  return pages.flatMap((t, i) => (normalizeForMatch(t) && !cited.has(i + 1) ? [i + 1] : []))
 }
 
 const MIN_PER_GAME = 6
@@ -61,8 +70,8 @@ export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>
   const lessons = pack.lessons.map((l, li): PlannedLesson => {
     const planned: PlannedLesson =
       l.lessonId !== undefined
-        ? { lessonId: l.lessonId, exercises: [], groups: 0 }
-        : { position: nextLesson++, title: l.title, exercises: [], groups: 0 }
+        ? { lessonId: l.lessonId, kind: l.kind, exercises: [], groups: 0 }
+        : { position: nextLesson++, title: l.title, kind: l.kind, section: l.section, exercises: [], groups: 0 }
     const key = l.lessonId ?? `new:${li}`
     l.exercises.forEach((e, ei) => {
       const { concept, group, source, ...payload } = e
@@ -100,12 +109,12 @@ export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>
       const conceptName = nameByKey.get(concept)!
       const position = nextEx.get(key) ?? 0
       nextEx.set(key, position + 1)
-      const variantGroup = group ?? `${normalizeForMatch(conceptName)}:${e.kind}`
-      if (l.lessonId !== undefined) incoming.push({ lessonId: l.lessonId, group: variantGroup })
+      const variantGroup = isStudyKind(e.kind) ? null : (group ?? `${normalizeForMatch(conceptName)}:${e.kind}`)
+      if (l.lessonId !== undefined && variantGroup) incoming.push({ lessonId: l.lessonId, group: variantGroup })
       planned.exercises.push({ position, conceptName, kind: e.kind, payload: payload as ExercisePayload, source: src, variantGroup })
     })
-    planned.groups = new Set(planned.exercises.map((e) => e.variantGroup)).size
-    if (planned.title !== undefined && planned.groups < MIN_PER_GAME)
+    planned.groups = planned.kind === 'estudio' ? planned.exercises.length : new Set(planned.exercises.map((e) => e.variantGroup)).size
+    if (planned.title !== undefined && planned.kind === 'practica' && planned.groups < MIN_PER_GAME)
       warnings.push(`Lección "${planned.title}": solo ${planned.groups} ejercicios por partida (se recomiendan al menos ${MIN_PER_GAME})`)
     return planned
   })
@@ -119,9 +128,21 @@ export function planImport(pack: Pack, pagesByFile: Map<string, string[] | null>
   const old = new Set(existingTitles.map(normalizeForMatch))
   const duplicateTitles = lessons.flatMap((l) => (l.title !== undefined && old.has(normalizeForMatch(l.title)) ? [l.title] : []))
   const files = pack.files.map((f) => ({ ...f, pages: pagesByFile.get(f.name)?.length ?? null }))
+  const sections = [...new Set(lessons.flatMap((l) => (l.title !== undefined && l.section ? [l.section] : [])))]
+  // Cobertura: solo si el paquete trae estudio (un paquete de reemplazo no pretende cubrir el PDF).
+  const study = lessons.filter((l) => l.kind === 'estudio')
+  const coverage = study.length === 0 ? [] : pack.files.flatMap((f) => {
+    const pages = pagesByFile.get(f.name)
+    if (!pages) return []
+    const cited = new Set(study.flatMap((l) => l.exercises.flatMap((e) => (e.source?.file === f.name ? [e.source.page] : []))))
+    const missing = uncoveredPages(pages, cited)
+    if (missing.length) warnings.push(`cobertura: ${f.name} páginas sin estudiar: ${missing.join(', ')}`)
+    return missing.length ? [{ file: f.name, pages: missing }] : []
+  })
   return {
     warnings, errors, unit: { ...pack.unit, unitId: existing.unitId }, newConcepts, files, lessons,
     unverified, unverifiable, existingLessons: existingTitles.length, duplicateTitles, clearReported: clear,
+    sections, coverage,
   }
 }
 
@@ -130,10 +151,13 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 /** Líneas de resumen: totales y, por lección nueva, ejercicios por partida (grupos distintos) y en total. */
 export function summarize(plan: Plan): string[] {
   const nuevas = plan.lessons.filter((l) => l.lessonId === undefined)
-  const total = plan.lessons.reduce((n, l) => n + l.exercises.length, 0)
+  const total = plan.lessons.filter((l) => l.kind === 'practica').reduce((n, l) => n + l.exercises.length, 0)
+  const cards = plan.lessons.filter((l) => l.kind === 'estudio').reduce((n, l) => n + l.exercises.length, 0)
   const head = [
     `Unidad ${plan.unit.number}`,
+    ...(plan.sections.length ? [plural(plan.sections.length, 'subsección', 'subsecciones')] : []),
     `${plural(nuevas.length, 'lección nueva', 'lecciones nuevas')}`,
+    ...(cards ? [plural(cards, 'tarjeta de estudio', 'tarjetas de estudio')] : []),
     plural(total, 'ejercicio', 'ejercicios'),
     plural(plan.unverified, 'cita sin verificar', 'citas sin verificar'),
     ...(plan.unverifiable > 0 ? [plural(plan.unverifiable, 'cita no verificable (sin texto)', 'citas no verificables (sin texto)')] : []),
@@ -141,8 +165,10 @@ export function summarize(plan: Plan): string[] {
   return [
     head,
     ...plan.lessons.map((l) =>
-      l.lessonId === undefined
-        ? `  ${l.title}: ${plural(l.groups, 'ejercicio', 'ejercicios')} por partida (${l.exercises.length} en total)`
+      l.lessonId === undefined && l.kind === 'estudio'
+        ? `  ${l.section ? `[${l.section}] ` : ''}${l.title} (estudio): ${plural(l.exercises.length, 'tarjeta', 'tarjetas')}`
+        : l.lessonId === undefined
+        ? `  ${l.section ? `[${l.section}] ` : ''}${l.title}: ${plural(l.groups, 'ejercicio', 'ejercicios')} por partida (${l.exercises.length} en total)`
         : `  lección ${l.lessonId}: ${plural(l.exercises.length, 'ejercicio nuevo', 'ejercicios nuevos')}`,
     ),
   ]

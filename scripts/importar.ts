@@ -119,8 +119,21 @@ ${plan.duplicateTitles.map((x) => `- ${x}`).join('\n')}`)
     }
     for (const f of plan.files)
       await tx.insert(s.files).values({ unitId, ...f }).onConflictDoUpdate({ target: [s.files.unitId, s.files.name], set: { pages: f.pages, kind: f.kind } })
+    // Subsecciones: se reutilizan por título dentro de la unidad; las nuevas van al final.
+    const sectionIds = new Map<string, string>()
+    if (plan.sections.length) {
+      const existingSecs = await tx.select().from(s.sections).where(eq(s.sections.unitId, unitId))
+      existingSecs.forEach((x) => sectionIds.set(x.title, x.id))
+      let pos = Math.max(-1, ...existingSecs.map((x) => x.position)) + 1
+      for (const title of plan.sections) if (!sectionIds.has(title)) {
+        const [{ id }] = await tx.insert(s.sections).values({ unitId, title, position: pos++ }).returning({ id: s.sections.id })
+        sectionIds.set(title, id)
+      }
+    }
     for (const l of plan.lessons) {
-      const lessonId = l.lessonId ?? (await tx.insert(s.lessons).values({ unitId, position: l.position!, title: l.title! }).returning({ id: s.lessons.id }))[0].id
+      const lessonId = l.lessonId ?? (await tx.insert(s.lessons).values({
+        unitId, position: l.position!, title: l.title!, kind: l.kind, sectionId: l.section ? sectionIds.get(l.section) : null,
+      }).returning({ id: s.lessons.id }))[0].id
       await tx.insert(s.exercises).values(l.exercises.map((e) => ({
         lessonId, conceptId: ids.get(e.conceptName)!, position: e.position, kind: e.kind,
         payload: e.payload, source: e.source, variantGroup: e.variantGroup,

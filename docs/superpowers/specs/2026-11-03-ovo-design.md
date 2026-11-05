@@ -85,6 +85,26 @@ La referencia es `leccion.html`.
 ### 3.5 Pantalla de Material
 Aquí se suben y administran los PDFs de cada unidad. El boceto no la cubre; su diseño queda a criterio del constructor siguiendo el mismo estilo.
 
+### 3.6 Subsecciones: estudiar y practicar (decidido el 4 de noviembre de 2026)
+
+La app no es solo de tests: también sirve para **repasar la información ahí mismo**.
+
+- **Cada unidad se divide en subsecciones**, una por tema del material. Así el contenido no abruma.
+- **Hay que cubrir todo el material**: no se salta ni se reduce información. El importador avisa qué páginas con texto no quedaron citadas en ninguna tarjeta de estudio.
+- **Cada subsección aparece en el camino como dos nodos seguidos:**
+  1. 📖 **Estudiar**: tarjetas que se recorren una por una, con barra de progreso y un botón "Siguiente". Hay cinco tipos de tarjeta:
+     - **concepto**: título y explicación;
+     - **flashcard**: frente y reverso, que se voltea al tocarla;
+     - **comparación**: tabla de A vs. B;
+     - **diagrama**: dibujado por la app; puede ser un proceso paso a paso, una línea de tiempo, un ciclo o una jerarquía;
+     - **lista**: elementos clave.
+     
+     Cada tarjeta cita su fuente (archivo y página) con las mismas reglas de §6.
+  2. 🎯 **Practicar**: los ejercicios de §4, solo sobre ese tema.
+- **La práctica se desbloquea al terminar el estudio.** El nodo de estudio tiene la opción **"Saltar estudio"**, como en Duolingo, con una confirmación corta ("¿Ya dominas este tema?"). Saltarlo desbloquea la práctica, pero **no** cuenta para la racha.
+- **Modo apunte:** una subsección ya estudiada (o la actual) se puede abrir como **una sola página tipo apunte** con todas sus tarjetas, para repasar rápido. El contenido es el mismo.
+- **Racha:** completar un estudio, sin saltarlo, cuenta igual que completar una práctica.
+
 ## 4. Tipos de ejercicio
 
 Regla general: **si la respuesta se puede verificar con código, la califica el código, no la IA.** La IA genera el contenido y califica solo las respuestas abiertas.
@@ -104,7 +124,7 @@ Regla general: **si la respuesta se puede verificar con código, la califica el 
 **El examen de unidad** usa los mismos tipos de ejercicio, salvo el dato clave. Es más largo (unas 25 preguntas) y cubre toda la unidad. **Se aprueba con 80%**, se puede repetir y cada intento queda en el historial.
 
 ## 5. Racha y estadísticas
-- **Racha:** días seguidos en los que se completó al menos una lección o un examen.
+- **Racha:** días seguidos en los que se completó al menos una lección (de estudio sin saltar o de práctica) o un examen.
 - Se registra cada intento de cada ejercicio (si fue correcto, cuándo y cuánto tardó) para calcular las estadísticas de la sección 3.3.
 - "**Conceptos que te cuestan**" sale de la tasa de error por concepto. Por eso, cada ejercicio generado se etiqueta con el concepto que evalúa.
 - **"Repasar"** arma una lección corta con ejercicios nuevos o variados sobre esos conceptos.

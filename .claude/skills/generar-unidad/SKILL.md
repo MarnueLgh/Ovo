@@ -20,9 +20,14 @@ Si falta alguna, pídela.
 
 ## 2. Leer TODO el material
 
-Lista `material/<Materia>/<N>/` y lee **cada archivo**, sin saltarte ninguno:
-- PDF: herramienta Read con `pages`. Si tiene más de 10 páginas, léelo en rangos (`1-10`, `11-20`, …) hasta terminar.
+Lista `material/<Materia>/<N>/` y lee **cada archivo y cada página**, sin saltarte ninguno:
+- PDF: herramienta Read con `pages` (rangos de 10: `1-10`, `11-20`, …). **Si Read no puede renderizar el PDF** (falta `pdftoppm`), extrae el texto por página con el mismo motor del importador y léelo completo:
+  ```bash
+  node --input-type=module -e "import {readFile} from 'node:fs/promises';import {getDocumentProxy,extractText} from 'unpdf';const p=await getDocumentProxy(new Uint8Array(await readFile(process.argv[1])));const {text}=await extractText(p,{mergePages:false});text.forEach((t,i)=>console.log('=== P'+(i+1)+' ===\\n'+t))" "material/<Materia>/<N>/<archivo>.pdf"
+  ```
+  Así las citas coinciden con lo que verifica el importador. Ojo: en diapositivas con **columnas o tablas** el texto extraído mezcla columnas; **no inventes relaciones** (qué década va con qué enfoque, qué columna con qué fila). Si no se puede saber, pregúntale al usuario cómo se lee esa diapositiva, o preséntala solo como lista de elementos sin relacionarlos.
 - Imagen: Read directamente (las citas de imágenes no se pueden verificar).
+
 Anota para cada dato el archivo y la página. **La página es el índice físico del PDF** (1 = primera hoja, el mismo número que usas en `pages` de Read), **no** el número impreso en la diapositiva o el pie de página.
 
 ## 3. Reglas de contenido (spec §6)
@@ -52,18 +57,31 @@ Reglas de calidad por tipo:
 - **abierta**: `keyPoints` son elementos que la respuesta debe incluir (2 a 6); `modelAnswer` los cubre todos.
 - **dato_clave**: `left` y `right` son los dos conceptos confundibles (título + viñetas) y `rule` la regla corta para distinguirlos.
 
-## 5. Tamaño y estructura
+## 5. Estructura: subsecciones de estudio + práctica (spec §3.6)
 
-- Define `concepts` (`key` único + `name`): uno por idea evaluada; cada ejercicio apunta a uno con `concept`. Sirven para las estadísticas de "lo que te cuesta".
-- Una partida muestra **un solo ejercicio por grupo de variantes** (`group`; por omisión `concepto:tipo`). Lo que cuenta para el tamaño de la lección son los **grupos distintos**, no las filas.
-- **Lecciones de 6 a 10 grupos distintos** (~5 min; el esquema acepta 1 a 12 grupos y hasta 36 filas). El importador imprime por lección "X ejercicios por partida (Y en total)" y avisa si X < 6. Agrupa por tema y **mezcla tipos**.
-- **2 a 3 variantes por grupo**: ejercicios distintos que evalúan la misma idea comparten `group` y van **en la misma lección** (no repartas las variantes entre lecciones).
-- `files`: **todos** los archivos de la carpeta de la unidad, se citen o no, con `kind` `pdf` o `imagen` y nombres idénticos a los del disco.
+La app sirve para **estudiar** ahí mismo, no solo para hacer tests. Por eso:
+
+1. **Divide la unidad en subsecciones**, una por tema del material (normalmente los subtemas del PDF: "1.1 …", "1.2 …", o bloques de diapositivas de un mismo tema). Cada lección de la subsección lleva `section` (título corto del tema).
+2. Cada subsección tiene **dos lecciones seguidas**, en este orden:
+   - **Estudio** (`"kind": "estudio"`): tarjetas que explican el tema **completo y con detalle**. **No resumas de más ni te saltes información**: todo lo que trae el material de ese tema va en alguna tarjeta. Usa el formato que mejor lo explique y **varía**:
+     - `concepto`: definición o explicación (`title`, `body` en párrafos separados por línea en blanco, `bullets` opcionales).
+     - `flashcard`: pregunta → respuesta, para datos puntuales.
+     - `comparacion`: tabla cuando 2–4 cosas se contrastan por varios criterios.
+     - `diagrama`: `proceso` (pasos en orden), `linea_tiempo` (épocas o fechas), `ciclo` (pasos que se repiten), `jerarquia` (estructura o clasificación, hasta 3 niveles con `children`).
+     - `lista`: elementos clave de un conjunto (causas, características, requisitos…).
+
+     Una lección de estudio admite de 1 a 40 tarjetas; apunta a ~6–15 por subsección para que no abrume (si un tema es enorme, pártelo en dos subsecciones).
+   - **Práctica** (sin `kind`, o `"kind": "practica"`): ejercicios **solo de ese tema** (dato_clave, relacionar, caso_practico, abierta, calculo según §4).
+3. `concepts`: uno por idea evaluada; tarjetas y ejercicios del mismo tema apuntan al mismo concepto (alimentan "lo que te cuesta").
+4. Tamaño de una **práctica**: una partida muestra **un ejercicio por grupo de variantes** (`group`; por omisión `concepto:tipo`). Apunta a **6–10 grupos distintos** (el esquema acepta 1 a 12 grupos y hasta 36 filas); si el tema da para menos, una práctica más corta está bien (el importador solo avisa). **2 a 3 variantes por grupo**, en la misma lección. Las tarjetas de estudio **no** llevan `group` (se muestran todas).
+5. **Cobertura obligatoria:** cada página con texto del material debe quedar citada (`source.page`) en **al menos una tarjeta de estudio**. El `--dry-run` avisa "cobertura: <archivo> páginas sin estudiar: …"; corrígelo agregando tarjetas. Solo se aceptan páginas sin cubrir si son portada, índice, separadores o puras referencias/URLs: explícaselo al usuario al mostrar el resumen.
+6. `files`: **todos** los archivos de la carpeta de la unidad, se citen o no, con `kind` `pdf` o `imagen` y nombres idénticos a los del disco.
+7. Si una lección nueva lleva `section`, todas las nuevas deben llevarla (el esquema lo exige).
 
 ## 6. Escribir, validar, importar
 
 1. Escribe el paquete en `contenido/<materia-slug>-u<N>-<AAAA-MM-DD>.json` (slug en minúsculas, sin acentos, con guiones; p. ej. `contenido/telecomunicaciones-i-u2-2026-11-04.json`). `contenido/` no se sube a GitHub.
-2. **Siempre primero** `npm run importar -- contenido/<archivo>.json --dry-run`. No escribe nada; imprime avisos (`AVISO ...`) y un resumen (`Unidad N · X lecciones nuevas · Y ejercicios · Z citas sin verificar`).
+2. **Siempre primero** `npm run importar -- contenido/<archivo>.json --dry-run`. No escribe nada; imprime avisos (`AVISO ...`, incluida la **cobertura**) y un resumen (`Unidad N · S subsecciones · X lecciones nuevas · T tarjetas de estudio · Y ejercicios · Z citas sin verificar`).
 3. Corrige el JSON y repite hasta que no haya errores. Atiende todo aviso que indique una cita mal puesta ("la cita no aparece...", "página corregida", "sin cita textual"): arregla `quote` y `page` leyendo de nuevo la página. Deja en cero las "citas sin verificar" de PDFs.
    El resumen tiene la forma `Unidad N · X lecciones nuevas · Y ejercicios · Z citas sin verificar` (más "citas no verificables (sin texto)" si hay páginas escaneadas) y, por lección, `<título>: X ejercicios por partida (Y en total)`.
 4. **Muéstrale al usuario el resumen y los avisos y pregunta antes de importar de verdad.** Solo con su sí, ejecuta `npm run importar -- contenido/<archivo>.json`. Un mismo archivo no se importa dos veces (se detecta por hash). Si la unidad ya tiene lecciones, las nuevas se agregan al final (el importador avisa con el conteo y se niega si un título ya existe, salvo `--force`). Si falta un archivo, una `page` excede las páginas del PDF o hay otro error, no se escribe nada.
@@ -150,7 +168,83 @@ Cada bloque es un ejercicio (va dentro de `exercises`). Se validan contra el esq
 { "kind": "calculo", "generator": "subneteo", "concept": "contrato" }
 ```
 
+## Ejemplos de tarjetas de estudio
+
+Cada bloque es una tarjeta (va dentro de `exercises` de una lección con `"kind": "estudio"`). Se validan en `src/lib/content/skill-examples.test.ts`. Llevan `concept` y `source` igual que los ejercicios, pero **no** `group`.
+
+`concepto`:
+
+```json tarjeta
+{
+  "kind": "concepto",
+  "concept": "contrato",
+  "title": "¿Qué es un contrato?",
+  "body": "Es un acuerdo de voluntades.\n\nSu efecto es crear o transferir derechos y obligaciones.",
+  "bullets": ["Requiere acuerdo de voluntades", "Crea o transfiere derechos y obligaciones"],
+  "source": { "file": "tema1.pdf", "page": 3, "quote": "el contrato es un acuerdo de voluntades para crear o transferir derechos y obligaciones" }
+}
+```
+
+`flashcard`:
+
+```json tarjeta
+{
+  "kind": "flashcard",
+  "concept": "contrato",
+  "front": "¿Qué distingue a un contrato de un convenio?",
+  "back": "El contrato crea o transfiere derechos y obligaciones; el convenio los modifica o extingue.",
+  "source": { "file": "tema1.pdf", "page": 3, "quote": "el contrato crea o transfiere derechos y obligaciones; el convenio los modifica o extingue" }
+}
+```
+
+`comparacion` (cada fila con una celda por columna):
+
+```json tarjeta
+{
+  "kind": "comparacion",
+  "concept": "contrato",
+  "title": "Contrato vs. convenio",
+  "columns": ["Contrato", "Convenio"],
+  "rows": [
+    { "label": "Efecto", "cells": ["Crea o transfiere", "Modifica o extingue"] },
+    { "label": "Sobre qué", "cells": ["Derechos y obligaciones", "Derechos y obligaciones"] }
+  ],
+  "source": { "file": "tema1.pdf", "page": 3, "quote": "el contrato crea o transfiere derechos y obligaciones; el convenio los modifica o extingue" }
+}
+```
+
+`diagrama` (`proceso` | `linea_tiempo` | `ciclo` | `jerarquia`; `children` solo en jerarquía):
+
+```json tarjeta
+{
+  "kind": "diagrama",
+  "concept": "contrato",
+  "title": "Cómo se forma un contrato",
+  "layout": "proceso",
+  "nodes": [
+    { "label": "Oferta", "detail": "Una parte hace una propuesta" },
+    { "label": "Aceptación", "detail": "La otra parte está conforme con los términos" }
+  ],
+  "source": { "file": "tema1.pdf", "page": 4, "quote": "la oferta es la propuesta y la aceptación la conformidad con ella" }
+}
+```
+
+`lista`:
+
+```json tarjeta
+{
+  "kind": "lista",
+  "concept": "contrato",
+  "title": "Elementos de la formación del contrato",
+  "intro": "Según el tema:",
+  "items": ["Oferta: la propuesta", "Aceptación: la conformidad con la oferta"],
+  "source": { "file": "tema1.pdf", "page": 4, "quote": "la oferta es la propuesta y la aceptación la conformidad con ella" }
+}
+```
+
 ## Ejemplo mínimo válido
+
+Una subsección con su estudio y su práctica:
 
 ```json
 {
@@ -160,7 +254,22 @@ Cada bloque es un ejercicio (va dentro de `exercises`). Se validan contra el esq
   "concepts": [{ "key": "contrato", "name": "Contrato" }],
   "lessons": [
     {
-      "title": "Contratos",
+      "title": "Contratos: estudio",
+      "kind": "estudio",
+      "section": "Contratos",
+      "exercises": [
+        {
+          "kind": "concepto",
+          "concept": "contrato",
+          "title": "¿Qué es un contrato?",
+          "body": "Es un acuerdo de voluntades que crea o transfiere derechos y obligaciones.",
+          "source": { "file": "tema1.pdf", "page": 3, "quote": "el contrato es un acuerdo de voluntades para crear o transferir derechos y obligaciones" }
+        }
+      ]
+    },
+    {
+      "title": "Contratos: práctica",
+      "section": "Contratos",
       "exercises": [
         {
           "kind": "abierta",

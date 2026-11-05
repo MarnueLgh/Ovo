@@ -33,6 +33,21 @@ describe('ejemplos de SKILL.md', () => {
     const r = PackSchema.safeParse(pack)
     expect(r.success ? [] : r.error.issues).toEqual([])
   })
+  const tarjetas = blocks('json tarjeta')
+  it('hay una tarjeta de estudio por tipo', () => {
+    expect(tarjetas.map((e) => e.kind).sort()).toEqual(['comparacion', 'concepto', 'diagrama', 'flashcard', 'lista'])
+  })
+  it.each(tarjetas.map((e) => [e.kind, e]))('tarjeta %s es válida en una lección de estudio', (_k, e) => {
+    const pack = {
+      subject: 'Derecho informático',
+      unit: { number: 1, title: 'Introducción' },
+      files: [{ name: 'tema1.pdf', kind: 'pdf' }],
+      concepts: [{ key: 'contrato', name: 'Contrato' }],
+      lessons: [{ title: 'E', kind: 'estudio', section: 'Contratos', exercises: [e] }],
+    }
+    const r = PackSchema.safeParse(pack)
+    expect(r.success ? [] : r.error.issues).toEqual([])
+  })
   it('el paquete de ejemplo completo es válido', () => {
     const [full] = blocks('json')
     expect(PackSchema.safeParse(full).success).toBe(true)

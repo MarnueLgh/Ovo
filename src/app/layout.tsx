@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Rubik } from "next/font/google";
+import { Suspense } from "react";
+import { Splash } from "@/components/Splash";
 import "./globals.css";
 
 const rubik = Rubik({
@@ -22,7 +24,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={rubik.variable}>
-      <body>{children}</body>
+      <body>
+        {/* Solo en carga en frío: las navegaciones son transiciones y React no
+            vuelve a mostrar el fallback de un Suspense ya revelado. */}
+        <Suspense fallback={<Splash />}>{children}</Suspense>
+      </body>
     </html>
   );
 }

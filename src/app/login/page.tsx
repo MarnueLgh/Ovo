@@ -1,11 +1,13 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Splash } from '@/components/Splash'
 import { signIn } from './actions'
 import './login.css'
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(signIn, null)
+  if (pending) return <Splash />
   return (
     <main className="login">
       <form className="login-card in" action={action}>

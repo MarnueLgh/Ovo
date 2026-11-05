@@ -17,7 +17,8 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
 
   const next = units.flatMap((u) => u.lessons).find((l) => l.state === 'current')
   const last = units.flatMap((u) => u.lessons).at(-1)
-  const summary = next ? await getLessonSummary(next.lesson.id) : null
+  const summary = next ? await getLessonSummary(next.lesson.id, next.lesson.kind) : null
+  const nextStudy = next?.lesson.kind === 'estudio'
   const currentUnit = units.find((u) => u.lessons.some((l) => l.state === 'current')) ?? units[0]
   const unitFiles = currentUnit ? await getUnitFiles(currentUnit.unit.id) : []
 
@@ -59,7 +60,12 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
                   </div>
                 ) : (
                   <>
-                    {lessons.map((l, i) => <PathNode key={l.lesson.id} index={i} state={l.state} lessonId={l.lesson.id} title={l.lesson.title} />)}
+                    {lessons.map((l, i) => (
+                      <div key={l.lesson.id} className="step-wrap">
+                        {l.section && l.section !== lessons[i - 1]?.section && <h3 className="sec-label in">{l.section}</h3>}
+                        <PathNode index={i} state={l.state} lessonId={l.lesson.id} title={l.lesson.title} kind={l.lesson.kind} />
+                      </div>
+                    ))}
                     <div className="gate g-lock in" style={delay}>
                       <span className="ic" aria-hidden="true">🎯</span>
                       <div><h3>Examen de unidad: próximamente</h3><p>Llegará con la fase 3.</p></div>
@@ -75,17 +81,21 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
       <aside className="rail" aria-label="Resumen">
         <StreakTile current={streak.current} best={streak.best} />
         <div className="tile t-cielo in" style={{ animationDelay: '80ms' }}>
-          <h2 className="k">Siguiente lección</h2>
+          <h2 className="k">{nextStudy ? 'Siguiente estudio' : 'Siguiente lección'}</h2>
           {next ? (
             <>
               <p className="next-title">{next.lesson.title}</p>
-              {summary && (
+              {next.section && <p className="next-sec">{next.section}</p>}
+              {summary && nextStudy && (
+                <div className="tags"><span className="tag">{summary.count} {summary.count === 1 ? 'tarjeta' : 'tarjetas'}</span></div>
+              )}
+              {summary && !nextStudy && (
                 <div className="tags">
                   {summary.kinds.map((k) => <span key={k} className="tag">{KIND_LABEL[k] ?? k}</span>)}
                   <span className="tag">{summary.count} {summary.count === 1 ? 'ejercicio' : 'ejercicios'}</span>
                 </div>
               )}
-              <Link className="cta" href={`/leccion/${next.lesson.id}`}>Empezar lección</Link>
+              <Link className="cta" href={`/leccion/${next.lesson.id}`}>{nextStudy ? 'Estudiar' : 'Empezar lección'}</Link>
             </>
           ) : (
             <>

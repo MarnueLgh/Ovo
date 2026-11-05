@@ -96,3 +96,16 @@
 .flist .fname{flex:1;min-width:0;overflow-wrap:anywhere}
 .flist small{color:var(--mute);font-size:12px;white-space:nowrap}
 .f-empty{font-size:12.5px;color:var(--mute);margin-top:6px}
+
+/* Subsecciones: etiqueta de tema y nodos de estudio */
+.step-wrap{display:flex;flex-direction:column;align-items:center;width:100%}
+.sec-label{font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;margin:14px 0 6px;text-align:center;max-width:100%}
+.n-study{background:var(--cielo);box-shadow:0 7px 0 var(--cielo-d)}
+.n-study:active{box-shadow:0 2px 0 var(--cielo-d)}
+.lbl-kind{color:var(--cielo-d)}
+.apunte,.skip,.skip-ask button{font:600 12.5px Rubik,system-ui,sans-serif;color:var(--ink);background:none;border:0;padding:8px 6px;min-height:44px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.skip{color:var(--mute)}
+.skip-ask{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink);flex-wrap:wrap;justify-content:center}
+.skip-err{color:var(--durazno-d);width:100%;text-align:center}
+.apunte:focus-visible,.skip:focus-visible,.skip-ask button:focus-visible{outline:2.5px solid var(--lila-d);outline-offset:2px;border-radius:8px}
+.next-sec{font-size:12.5px;font-weight:600;opacity:.85;margin:-2px 0 6px}

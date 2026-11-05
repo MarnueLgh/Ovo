@@ -1,6 +1,6 @@
 import { and, asc, count, eq, exists, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { attempts, exercises, files, lessonCompletions, lessons, subjects, units } from '@/db/schema'
+import { attempts, exercises, files, lessonCompletions, lessons, sections, subjects, units } from '@/db/schema'
 import { computeNodeStates, type NodeState } from '@/lib/path'
 import { computeStreak } from '@/lib/streak'
 import { toLocalDay } from '@/lib/time'
@@ -27,6 +27,10 @@ export async function getSubjectPath(subjectId: string) {
       ),
     )
   const done = new Set((await db.select({ id: lessonCompletions.lessonId }).from(lessonCompletions)).map((r) => r.id))
+  const sectionRows = unitRows.length
+    ? await db.select().from(sections).innerJoin(units, eq(sections.unitId, units.id)).where(eq(units.subjectId, subjectId))
+    : []
+  const sectionTitle = new Map(sectionRows.map((r) => [r.sections.id, r.sections.title]))
 
   // Orden de la materia entero: la lección "actual" es la primera sin completar de todo el camino.
   const unitPos = new Map(unitRows.map((u) => [u.id, u.position]))
@@ -40,24 +44,28 @@ export async function getSubjectPath(subjectId: string) {
     subject,
     units: unitRows.map((unit) => ({
       unit,
-      lessons: ordered.filter((l) => l.unitId === unit.id).map((lesson) => ({ lesson, state: stateOf.get(lesson.id)! })),
+      lessons: ordered.filter((l) => l.unitId === unit.id).map((lesson) => ({
+        lesson, state: stateOf.get(lesson.id)!, section: lesson.sectionId ? sectionTitle.get(lesson.sectionId) ?? null : null,
+      })),
     })),
   }
 }
 
 export async function getStreak() {
-  const rows = await db.select({ at: lessonCompletions.completedAt }).from(lessonCompletions)
+  // Un estudio saltado desbloquea la práctica pero no cuenta para la racha.
+  const rows = await db.select({ at: lessonCompletions.completedAt }).from(lessonCompletions).where(eq(lessonCompletions.skipped, false))
   return computeStreak(rows.map((r) => toLocalDay(r.at)), toLocalDay(new Date()))
 }
 
-/** Ejercicios activos de la lección que una partida mostraría: una variante por grupo (la menos intentada). */
-async function pickedExercises(lessonId: string) {
+/** Ejercicios activos de la lección que una partida mostraría: una variante por grupo (la menos intentada).
+ *  En lecciones de estudio no hay variantes: se muestran todas las tarjetas en orden. */
+async function pickedExercises(lessonId: string, kind: string = 'practica') {
   const rows = await db
     .select()
     .from(exercises)
     .where(and(eq(exercises.lessonId, lessonId), isNull(exercises.retiredAt)))
     .orderBy(asc(exercises.position))
-  if (rows.length === 0) return rows
+  if (rows.length === 0 || kind === 'estudio') return rows
   const counts = await db
     .select({ id: attempts.exerciseId, n: count() })
     .from(attempts)
@@ -69,8 +77,8 @@ async function pickedExercises(lessonId: string) {
 }
 
 /** Tipos de ejercicio (sin repetir, en orden de posición) y total de lo que mostraría una partida. */
-export async function getLessonSummary(lessonId: string) {
-  const rows = await pickedExercises(lessonId)
+export async function getLessonSummary(lessonId: string, kind?: string) {
+  const rows = await pickedExercises(lessonId, kind)
   return { kinds: [...new Set(rows.map((r) => r.kind))], count: rows.length }
 }
 
@@ -83,10 +91,11 @@ export async function getLessonForPlay(lessonId: string) {
     .innerJoin(units, eq(lessons.unitId, units.id))
     .where(eq(lessons.id, lessonId))
   if (!row) return null
-  const rows = await pickedExercises(lessonId)
+  const rows = await pickedExercises(lessonId, row.lesson.kind)
   if (rows.length === 0) return null
   return {
     title: row.lesson.title,
+    kind: row.lesson.kind as 'estudio' | 'practica',
     subjectId: row.subjectId,
     exercises: rows.map((e) => ({ id: e.id, conceptId: e.conceptId, source: e.source, payload: parsePayload(e.payload) })),
   }

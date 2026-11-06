@@ -13,6 +13,7 @@ import { CalculoSubneteo } from './CalculoSubneteo'
 import { CasoPractico } from './CasoPractico'
 import type { ExerciseResult } from './CheckBar'
 import { DatoClave } from './DatoClave'
+import { LessonDone } from './LessonDone'
 import { Relacionar } from './Relacionar'
 import './leccion.css'
 
@@ -43,6 +44,9 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practi
   const startedAt = useRef(0)
   const changedAt = useRef(0) // ignora un doble clic que saltaría el siguiente ejercicio
   const finishing = useRef(false)
+  const lessonStart = useRef(0)
+  const hits = useRef(0)
+  const [done, setDone] = useState<{ correct: number; total: number; ms: number } | null>(null)
   const ex = exercises[i]
   const linkRef = useRef<HTMLButtonElement>(null)
   const noRef = useRef<HTMLButtonElement>(null)
@@ -55,6 +59,7 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practi
     ;(asking ? noRef : linkRef).current?.focus()
   }, [asking])
   useEffect(() => { startedAt.current = Date.now() }, [i, ex.id])
+  useEffect(() => { lessonStart.current = Date.now() }, [])
   useEffect(() => {
     if (!focusNext.current) return
     focusNext.current = false
@@ -65,6 +70,7 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practi
   function onResult(r: ExerciseResult) {
     if (sent.current.has(ex.id)) return
     sent.current.add(ex.id)
+    if (r.correct) hits.current++
     const id = attemptIds.current.get(ex.id) ?? newAttemptId()
     attemptIds.current.set(ex.id, id)
     setSaving(true)
@@ -79,7 +85,8 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practi
     setSaving(true)
     try {
       await completeLesson(lessonId)
-      router.push(`/materia/${subjectId}`)
+      // estudio: sin respuestas, cuenta las tarjetas vistas; práctica: el primer intento de cada ejercicio
+      setDone({ correct: hits.current, total: study ? exercises.length : sent.current.size, ms: Date.now() - lessonStart.current })
     } catch {
       setNote('No se pudo guardar la lección. Inténtalo de nuevo')
       finishing.current = false
@@ -122,6 +129,8 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practi
       setExercises((l) => l.filter((e) => e.id !== ex.id)) // el siguiente ocupa el mismo índice; no se registra intento
     } else await finish()
   }
+
+  if (done) return <div className="lesson"><LessonDone study={study} {...done} onContinue={() => router.push(`/materia/${subjectId}`)} /></div>
 
   const props = { source: ex.source, onResult, onContinue, saving, note }
   const p = ex.payload

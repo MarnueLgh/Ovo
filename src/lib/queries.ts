@@ -1,12 +1,16 @@
 import { and, asc, count, eq, exists, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { attempts, exercises, files, lessonCompletions, lessons, sections, subjects, units } from '@/db/schema'
+import { attempts, concepts, exercises, files, lessonCompletions, lessons, sections, subjects, units } from '@/db/schema'
 import { computeNodeStates, type NodeState } from '@/lib/path'
 import { computeStreak } from '@/lib/streak'
 import { toLocalDay } from '@/lib/time'
 import { pickVariants } from '@/lib/content/variants'
-import { parsePayload } from '@/lib/exercises/types'
+import { isStudyKind, parsePayload, type Source } from '@/lib/exercises/types'
+import { lastWeekOf, weekOf } from '@/lib/panel'
 import { isUuid } from '@/lib/uuid'
+
+// Lección con >=1 ejercicio activo.
+const hasActive = exists(db.select({ one: exercises.id }).from(exercises).where(and(eq(exercises.lessonId, lessons.id), isNull(exercises.retiredAt))))
 
 export const getSubjects = () => db.select().from(subjects).orderBy(asc(subjects.position))
 
@@ -20,12 +24,7 @@ export async function getSubjectPath(subjectId: string) {
     .from(lessons)
     .innerJoin(units, eq(lessons.unitId, units.id))
     // Solo lecciones con >=1 ejercicio activo: una vacía sería la "actual" (y /leccion daría 404), bloqueando el camino.
-    .where(
-      and(
-        eq(units.subjectId, subjectId),
-        exists(db.select({ one: exercises.id }).from(exercises).where(and(eq(exercises.lessonId, lessons.id), isNull(exercises.retiredAt)))),
-      ),
-    )
+    .where(and(eq(units.subjectId, subjectId), hasActive))
   const done = new Set((await db.select({ id: lessonCompletions.lessonId }).from(lessonCompletions)).map((r) => r.id))
   const sectionRows = unitRows.length
     ? await db.select().from(sections).innerJoin(units, eq(sections.unitId, units.id)).where(eq(units.subjectId, subjectId))
@@ -130,5 +129,98 @@ export async function getMaterial() {
           exercises: active.filter((e) => unitOfLesson.get(e.lessonId) === unit.id).length,
         })),
     })),
+  }
+}
+
+const avgPct = (xs: { score: number }[]) => (xs.length ? Math.round((xs.reduce((a, x) => a + x.score, 0) / xs.length) * 100) : null)
+
+/** Todo lo del panel. ponytail: trae todos los intentos y los agrega en JS; pasar a SQL si crecen a decenas de miles. */
+export async function getPanel() {
+  const today = toLocalDay(new Date())
+  const week = weekOf(today)
+  const lastWeek = new Set(lastWeekOf(today))
+  const [streak, att, comps, subjectRows, unitRows, lessonRows, conceptRows] = await Promise.all([
+    getStreak(),
+    // El concepto sale del ejercicio (servidor), no del conceptId que manda el cliente.
+    db.select({ at: attempts.answeredAt, score: attempts.score, correct: attempts.correct, ms: attempts.durationMs, conceptId: exercises.conceptId, source: exercises.source })
+      .from(attempts).innerJoin(exercises, eq(attempts.exerciseId, exercises.id)),
+    db.select({ lessonId: lessonCompletions.lessonId, at: lessonCompletions.completedAt, skipped: lessonCompletions.skipped }).from(lessonCompletions),
+    getSubjects(),
+    db.select().from(units),
+    db.select({ id: lessons.id, unitId: lessons.unitId }).from(lessons).where(hasActive),
+    db.select({ id: concepts.id, name: concepts.name, subjectId: units.subjectId }).from(concepts).innerJoin(units, eq(concepts.unitId, units.id)),
+  ])
+
+  const days = att.map((a) => ({ ...a, day: toLocalDay(a.at) }))
+  const lessonsByDay = new Map<string, number>()
+  for (const c of comps) if (!c.skipped) { const d = toLocalDay(c.at); lessonsByDay.set(d, (lessonsByDay.get(d) ?? 0) + 1) }
+
+  const thisWeek = days.filter((a) => week.includes(a.day))
+  const minutesByDay = week.map((d) => ({ day: d, ms: thisWeek.filter((a) => a.day === d).reduce((s, a) => s + a.ms, 0) }))
+
+  // Conceptos con al menos un fallo, peor promedio primero.
+  const byConcept = new Map<string, { n: number; fails: number; sum: number; source: Source | null }>()
+  for (const a of att) {
+    if (!a.conceptId) continue
+    const c = byConcept.get(a.conceptId) ?? { n: 0, fails: 0, sum: 0, source: null }
+    c.n++
+    c.sum += a.score
+    if (!a.correct) { c.fails++; c.source = a.source ?? c.source }
+    else c.source ??= a.source
+    byConcept.set(a.conceptId, c)
+  }
+  const conceptOf = new Map(conceptRows.map((c) => [c.id, c]))
+  const subjectOf = new Map(subjectRows.map((s) => [s.id, s]))
+  const weak = [...byConcept]
+    .filter(([id, c]) => c.fails > 0 && conceptOf.has(id))
+    .sort(([, a], [, b]) => a.sum / a.n - b.sum / b.n || b.fails - a.fails)
+    .slice(0, 5)
+    .map(([id, c]) => ({ id, name: conceptOf.get(id)!.name, subject: subjectOf.get(conceptOf.get(id)!.subjectId), fails: c.fails, n: c.n, source: c.source }))
+
+  // Unidad completada = todas sus lecciones activas hechas (hasta que existan los exámenes).
+  const done = new Set(comps.map((c) => c.lessonId))
+  const progress = subjectRows.map((subject) => {
+    const us = unitRows.filter((u) => u.subjectId === subject.id)
+    const complete = us.filter((u) => {
+      const ls = lessonRows.filter((l) => l.unitId === u.id)
+      return ls.length > 0 && ls.every((l) => done.has(l.id))
+    }).length
+    return { subject, complete, total: us.length }
+  })
+
+  return {
+    today,
+    streak,
+    weekMs: thisWeek.reduce((s, a) => s + a.ms, 0),
+    weekLessons: week.reduce((s, d) => s + (lessonsByDay.get(d) ?? 0), 0),
+    accuracy: avgPct(thisWeek),
+    accuracyLast: avgPct(days.filter((a) => lastWeek.has(a.day))),
+    minutesByDay,
+    lessonsByDay,
+    weak,
+    progress,
+  }
+}
+
+/** Repaso de un concepto: sus ejercicios de práctica activos, la variante menos vista de cada grupo. */
+export async function getReview(conceptId: string) {
+  if (!isUuid(conceptId)) return null
+  const [c] = await db.select({ name: concepts.name, subjectId: units.subjectId }).from(concepts).innerJoin(units, eq(concepts.unitId, units.id)).where(eq(concepts.id, conceptId))
+  if (!c) return null
+  const rows = (await db.select().from(exercises).where(and(eq(exercises.conceptId, conceptId), isNull(exercises.retiredAt))).orderBy(asc(exercises.position)))
+    .filter((r) => !isStudyKind(r.kind))
+  if (rows.length === 0) return null
+  const counts = await db
+    .select({ id: attempts.exerciseId, n: count() })
+    .from(attempts)
+    .innerJoin(exercises, eq(attempts.exerciseId, exercises.id))
+    .where(eq(exercises.conceptId, conceptId))
+    .groupBy(attempts.exerciseId)
+  const seen = new Map(counts.map((r) => [r.id, r.n]))
+  const picked = pickVariants(rows.map((r) => ({ ...r, group: r.variantGroup })), seen)
+  return {
+    name: c.name,
+    subjectId: c.subjectId,
+    exercises: picked.map((e) => ({ id: e.id, conceptId: e.conceptId, source: e.source, payload: parsePayload(e.payload) })),
   }
 }

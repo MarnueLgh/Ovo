@@ -19,7 +19,8 @@ import './leccion.css'
 
 type Ex = { id: string; conceptId: string | null; source: Source | null; payload: ExercisePayload }
 
-type Props = { lessonId: string; subjectId: string; exercises: Ex[]; streak: number; kind?: 'estudio' | 'practica' }
+/** Sin lessonId (repaso) no se registra la lección: el repaso no cuenta para la racha. `back` reemplaza el regreso al camino. */
+type Props = { lessonId?: string; subjectId: string; exercises: Ex[]; streak: number; kind?: 'estudio' | 'practica'; back?: string }
 
 /** Next 16 (cacheComponents) conserva la página oculta con <Activity>: sin este key, volver a abrir la lección
  *  mostraba la partida anterior. bfcacheId cambia en cada navegación nueva (Link/push) y se mantiene con atrás/adelante. */
@@ -28,7 +29,7 @@ export function LessonPlayer(props: Props) {
   return <LessonRun key={bfcacheId} {...props} />
 }
 
-function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practica' }: Props) {
+function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practica', back = `/materia/${subjectId}` }: Props) {
   const study = kind === 'estudio'
   const router = useRouter()
   const [i, setI] = useState(0)
@@ -84,7 +85,7 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practi
     finishing.current = true
     setSaving(true)
     try {
-      await completeLesson(lessonId)
+      if (lessonId) await completeLesson(lessonId)
       // estudio: sin respuestas, cuenta las tarjetas vistas; práctica: el primer intento de cada ejercicio
       setDone({ correct: hits.current, total: study ? exercises.length : sent.current.size, ms: Date.now() - lessonStart.current })
     } catch {
@@ -130,14 +131,14 @@ function LessonRun({ lessonId, subjectId, exercises: all, streak, kind = 'practi
     } else await finish()
   }
 
-  if (done) return <div className="lesson"><LessonDone study={study} {...done} onContinue={() => router.push(`/materia/${subjectId}`)} /></div>
+  if (done) return <div className="lesson"><LessonDone study={study} {...done} onContinue={() => router.push(back)} /></div>
 
   const props = { source: ex.source, onResult, onContinue, saving, note }
   const p = ex.payload
   return (
     <div className="lesson">
       <header className="top">
-        <Link className="x" href={`/materia/${subjectId}`} aria-label={study ? 'Salir del estudio' : 'Salir de la lección'}>✕</Link>
+        <Link className="x" href={back} aria-label={study ? 'Salir del estudio' : 'Salir de la lección'}>✕</Link>
         <div className="prog" role="progressbar" aria-label={study ? 'Progreso del estudio' : 'Progreso de la lección'} aria-valuemin={0} aria-valuemax={exercises.length} aria-valuenow={i}>
           {exercises.map((e, j) => <span key={e.id} className={j < i ? 'done' : j === i ? 'on' : undefined} />)}
         </div>

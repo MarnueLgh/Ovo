@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatMinutes, heatLevel, lastWeekOf, weekOf, yearGrid } from './panel'
+import { daysBetween, formatMinutes, heatLevel, lastWeekOf, monthGrid, shiftMonth, weekOf, yearGrid } from './panel'
 
 describe('panel', () => {
   it('semana de lunes a domingo', () => {
@@ -20,5 +20,20 @@ describe('panel', () => {
     expect(formatMinutes(225 * 60_000)).toBe('3 h 45 min')
     expect(formatMinutes(120 * 60_000)).toBe('2 h')
     expect(formatMinutes(29_000)).toBe('0 min')
+  })
+})
+
+describe('calendario', () => {
+  it('mes empieza en su día de la semana', () => {
+    const g = monthGrid('2026-11') // 1 nov 2026 es domingo
+    expect(g[0]).toEqual([null, null, null, null, null, null, '2026-11-01'])
+    expect(g.flat().filter(Boolean)).toHaveLength(30)
+    expect(g.at(-1)!.at(-1)).toBe(null)
+    expect(monthGrid('2027-02').flat().filter(Boolean)).toHaveLength(28)
+  })
+  it('cambia de mes y cuenta días', () => {
+    expect(shiftMonth('2026-12', 1)).toBe('2027-01')
+    expect(shiftMonth('2026-01', -1)).toBe('2025-12')
+    expect(daysBetween('2026-11-05', '2026-11-10')).toBe(5)
   })
 })

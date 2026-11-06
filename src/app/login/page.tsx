@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Foca } from '@/components/Foca'
 import { Splash } from '@/components/Splash'
 import { signIn } from './actions'
 import './login.css'
@@ -11,8 +12,8 @@ export default function LoginPage() {
   return (
     <main className="login">
       <form className="login-card in" action={action}>
-        <div className="egg" title="Ovo" />
-        <h1>Ovo</h1>
+        <Foca className="foca" />
+        <h1>ovo</h1>
         <label htmlFor="email">Correo</label>
         <input id="email" name="email" type="email" autoComplete="email" required />
         <label htmlFor="password">Contraseña</label>

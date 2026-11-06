@@ -5,3 +5,5 @@
 .aj-mail{font-size:14px;color:var(--mute);margin:4px 0 14px;overflow-wrap:anywhere}
 .aj-out{font:700 15px var(--font-rubik),Rubik,sans-serif;color:#B4471C;background:#FFE3DA;border:0;border-radius:999px;padding:12px 22px;min-height:44px;cursor:pointer;transition:transform 160ms var(--ease)}
 .aj-out:active{transform:scale(.97)}
+.aj-link{display:inline-flex;align-items:center;min-height:44px;padding:0 22px;border-radius:999px;background:var(--ink);color:#fff;font-weight:700;font-size:15px;text-decoration:none}
+.aj-link:focus-visible,.aj-out:focus-visible{outline:3px solid var(--lila-d);outline-offset:3px}

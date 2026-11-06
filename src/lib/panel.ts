@@ -27,3 +27,24 @@ export function formatMinutes(ms: number) {
   const h = Math.floor(min / 60)
   return h ? `${h} h${min % 60 ? ` ${min % 60} min` : ''}` : `${min} min`
 }
+
+/** Semanas (lunes a domingo) que cubren el mes `ym` (YYYY-MM); null fuera del mes. */
+export function monthGrid(ym: string): (string | null)[][] {
+  const first = num(ym + '-01')
+  const [y, m] = ym.split('-').map(Number)
+  const len = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const lead = (new Date(first * DAY).getUTCDay() + 6) % 7
+  const cells = [...Array(lead).fill(null), ...Array.from({ length: len }, (_, i) => day(first + i))]
+  while (cells.length % 7) cells.push(null)
+  return Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7))
+}
+
+/** Mes siguiente o anterior: shiftMonth('2026-12', 1) → '2027-01'. */
+export function shiftMonth(ym: string, by: number) {
+  const [y, m] = ym.split('-').map(Number)
+  const d = new Date(Date.UTC(y, m - 1 + by, 1))
+  return d.toISOString().slice(0, 7)
+}
+
+/** Días entre dos fechas YYYY-MM-DD. */
+export const daysBetween = (from: string, to: string) => num(to) - num(from)

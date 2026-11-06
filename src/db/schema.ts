@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, real, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { boolean, date, integer, jsonb, pgTable, real, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import type { ExercisePayload, Source } from '../lib/exercises/types'
 
 const id = () => uuid('id').primaryKey().defaultRandom()
@@ -84,4 +84,12 @@ export const imports = pgTable('imports', {
   hash: text('hash').notNull().unique(),
   file: text('file').notNull(),
   importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS()
+
+/** Fechas de examen reales que el usuario captura desde el calendario del inicio. */
+export const examDates = pgTable('exam_dates', {
+  id: id(),
+  subjectId: uuid('subject_id').notNull().references(() => subjects.id),
+  unitId: uuid('unit_id').references(() => units.id),
+  on: date('on').notNull(), // YYYY-MM-DD local
 }).enableRLS()

@@ -11,9 +11,9 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "Ovo",
+  title: "ovo",
   icons: { apple: "/apple-touch-icon.png" },
-  appleWebApp: { capable: true, title: "Ovo", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "ovo", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

@@ -151,12 +151,12 @@
 
 /* pantalla de logro */
 .lesson .logro{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:48px 24px calc(32px + env(safe-area-inset-bottom));max-width:440px;width:100%;margin:0 auto}
-.lesson .logro-egg{position:relative;width:132px;margin:0 0 26px;padding:26px 30px 14px;background:var(--lila);border-radius:50%;box-sizing:content-box}
-.lesson .logro-egg svg{display:block;width:100%;height:auto;animation:egg-pop 520ms var(--ease) both,egg-hop 1.8s ease-in-out 600ms infinite}
+.lesson .logro-foca{position:relative;width:140px;margin:0 0 26px;padding:30px 26px 22px;background:var(--lila);border-radius:50%;box-sizing:content-box}
+.lesson .logro-foca svg{display:block;width:100%;height:auto;animation:foca-pop 520ms var(--ease) both,foca-hop 1.8s ease-in-out 600ms infinite}
 .lesson .spark{position:absolute;font-size:26px;color:var(--mantequilla-d);animation:spark 1.6s ease-in-out infinite}
 .lesson .s1{left:-28px;top:20px}.lesson .s2{right:-30px;top:4px;color:var(--lila-d);animation-delay:.4s}.lesson .s3{right:-14px;bottom:30px;font-size:18px;color:var(--cielo-d);animation-delay:.8s}
-@keyframes egg-pop{from{transform:scale(.4) rotate(-8deg);opacity:0}}
-@keyframes egg-hop{0%,100%{transform:none}40%{transform:translateY(-12px) rotate(-3deg)}60%{transform:translateY(-12px) rotate(3deg)}}
+@keyframes foca-pop{from{transform:scale(.4) rotate(-8deg);opacity:0}}
+@keyframes foca-hop{0%,100%{transform:none}40%{transform:translateY(-12px) rotate(-3deg)}60%{transform:translateY(-12px) rotate(3deg)}}
 @keyframes spark{0%,100%{transform:scale(.6);opacity:.4}50%{transform:scale(1.1);opacity:1}}
 .lesson .logro h1{font-size:32px;animation:rise 320ms var(--ease) 120ms both}
 .lesson .logro .lead{animation:rise 320ms var(--ease) 180ms both}

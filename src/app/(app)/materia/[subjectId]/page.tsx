@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PathNode } from '@/components/PathNode'
 import { StreakTile } from '@/components/StreakTile'
-import { getLessonSummary, getStreak, getSubjectPath, getSubjects, getUnitFiles } from '@/lib/queries'
+import { getLessonSummary, getStreak, getSubjectPath, getUnitFiles } from '@/lib/queries'
 import { requireUser } from '@/lib/supabase/server'
 
 const KIND_LABEL: Record<string, string> = { dato_clave: 'Dato clave', relacionar: 'Relacionar', caso_practico: 'Caso práctico', calculo: 'Cálculo', abierta: 'Respuesta abierta' }
@@ -11,7 +11,7 @@ const KIND_LABEL: Record<string, string> = { dato_clave: 'Dato clave', relaciona
 async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
   const { subjectId } = await params
   await requireUser()
-  const [subjects, path, streak] = await Promise.all([getSubjects(), getSubjectPath(subjectId), getStreak()])
+  const [path, streak] = await Promise.all([getSubjectPath(subjectId), getStreak()])
   if (!path) notFound()
   const { subject, units } = path
 
@@ -25,16 +25,12 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
   return (
     <div className="camino" style={{ '--c': subject.color } as React.CSSProperties}>
       <main>
-        <div className="chips in">
-          {subjects.map((s) => (
-            <Link key={s.id} href={`/materia/${s.id}`} className={s.id === subject.id ? 'chip on' : 'chip'} aria-current={s.id === subject.id ? 'page' : undefined}>
-              {s.name}
-            </Link>
-          ))}
-        </div>
-        <div className="hero in" style={{ animationDelay: '40ms' }}>
+        <div className="hero in">
           <div className="hero-emoji" aria-hidden="true">{subject.emoji}</div>
-          <h1>{currentUnit ? `Unidad ${currentUnit.unit.number}` : 'Sin unidades'}</h1>
+          <div>
+            <h1>{subject.name}</h1>
+            <p className="hero-unit">{currentUnit ? `Unidad ${currentUnit.unit.number}` : 'Sin unidades'}</p>
+          </div>
         </div>
 
         {units.map(({ unit, lessons }, ui) => {
@@ -56,7 +52,7 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
                 {lessons.length === 0 ? (
                   <div className="gate g-empty in" style={delay}>
                     <span className="ic" aria-hidden="true">📥</span>
-                    <div><h3>Sube los PDFs de esta unidad</h3><p>Ovo arma las lecciones en cuanto los subas.</p></div>
+                    <div><h3>Sube los PDFs de esta unidad</h3><p>ovo arma las lecciones en cuanto los subas.</p></div>
                   </div>
                 ) : (
                   <>

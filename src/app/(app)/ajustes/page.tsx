@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { requireUser } from '@/lib/supabase/server'
 import { signOut } from './actions'
 import './ajustes.css'
@@ -14,6 +15,11 @@ async function Ajustes() {
         <form action={signOut}>
           <button type="submit" className="aj-out">Cerrar sesión</button>
         </form>
+      </section>
+      <section className="aj-card in" style={{ animationDelay: '40ms' }} aria-labelledby="aj-mat">
+        <h2 id="aj-mat">Material</h2>
+        <p className="aj-mail">Tus PDFs por materia y cómo agregar unidades nuevas.</p>
+        <Link href="/material" className="aj-link">Ver material</Link>
       </section>
     </main>
   )

@@ -1,6 +1,6 @@
 import { and, asc, count, eq, exists, isNull } from 'drizzle-orm'
 import { db } from '@/db'
-import { attempts, concepts, exercises, files, lessonCompletions, lessons, sections, subjects, units } from '@/db/schema'
+import { attempts, concepts, examDates, exercises, files, lessonCompletions, lessons, sections, subjects, units } from '@/db/schema'
 import { computeNodeStates, type NodeState } from '@/lib/path'
 import { computeStreak } from '@/lib/streak'
 import { toLocalDay } from '@/lib/time'
@@ -222,5 +222,39 @@ export async function getReview(conceptId: string) {
     name: c.name,
     subjectId: c.subjectId,
     exercises: picked.map((e) => ({ id: e.id, conceptId: e.conceptId, source: e.source, payload: parsePayload(e.payload) })),
+  }
+}
+
+/** Inicio: materias con su unidad actual y avance, días activos de la semana, racha y fechas de examen. */
+export async function getHome() {
+  const today = toLocalDay(new Date())
+  const [streak, subjectRows, unitRows, lessonRows, comps, exams] = await Promise.all([
+    getStreak(),
+    getSubjects(),
+    db.select().from(units).orderBy(asc(units.position)),
+    db.select({ id: lessons.id, unitId: lessons.unitId, position: lessons.position }).from(lessons).where(hasActive),
+    db.select({ lessonId: lessonCompletions.lessonId, at: lessonCompletions.completedAt, skipped: lessonCompletions.skipped }).from(lessonCompletions),
+    db.select({ id: examDates.id, on: examDates.on, subjectId: examDates.subjectId, unitId: examDates.unitId }).from(examDates).orderBy(asc(examDates.on)),
+  ])
+  const done = new Set(comps.map((c) => c.lessonId))
+  const activeDays = new Set(comps.filter((c) => !c.skipped).map((c) => toLocalDay(c.at)))
+  const unitNum = new Map(unitRows.map((u) => [u.id, u.number]))
+
+  const subjects = subjectRows.map((subject) => {
+    const us = unitRows.filter((u) => u.subjectId === subject.id)
+    const ls = lessonRows.filter((l) => us.some((u) => u.id === l.unitId))
+    const pos = new Map(us.map((u) => [u.id, u.position]))
+    const next = ls.sort((a, b) => pos.get(a.unitId)! - pos.get(b.unitId)! || a.position - b.position).find((l) => !done.has(l.id))
+    const unit = next ? us.find((u) => u.id === next.unitId) : us.at(-1)
+    return { subject, unit: unit ? unit.number : null, done: ls.filter((l) => done.has(l.id)).length, total: ls.length }
+  })
+
+  return {
+    today,
+    streak,
+    week: weekOf(today).map((d) => ({ day: d, active: activeDays.has(d) })),
+    subjects,
+    units: unitRows.map((u) => ({ id: u.id, subjectId: u.subjectId, number: u.number, title: u.title })),
+    exams: exams.map((e) => ({ ...e, unit: e.unitId ? unitNum.get(e.unitId) ?? null : null })),
   }
 }

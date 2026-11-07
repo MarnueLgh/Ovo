@@ -21,3 +21,12 @@ export function findQuotePage(quote: string, pages: string[], hint: number): num
   }
   return null
 }
+
+/** Texto plano de una nota markdown (Obsidian): quita marcas de formato para que las citas se copien sin ellas. */
+export const markdownText = (md: string): string =>
+  md
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2') // [[nota|alias]]
+    .replace(/\[\[([^\]]+)\]\]/g, '$1') // [[nota]]
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // [texto](url)
+    .replace(/^\s*(#{1,6}|>+)\s*/gm, '') // encabezados y citas
+    .replace(/\*\*|__|==|~~|[*`]/g, '') // negritas, resaltado, tachado, cursivas, código

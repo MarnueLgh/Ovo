@@ -11,6 +11,7 @@ import postgres from 'postgres'
 import { extractText, getDocumentProxy } from 'unpdf'
 import * as s from '../src/db/schema'
 import { planImport, summarize } from '../src/lib/content/import'
+import { markdownText } from '../src/lib/content/quotes'
 import { PackSchema } from '../src/lib/content/pack'
 import { effectiveGroup } from '../src/lib/content/reportados'
 
@@ -76,6 +77,8 @@ ${USO}`)
   const pagesByFile = new Map<string, string[] | null>()
   for (const f of pack.files) {
     if (f.kind === 'imagen') { pagesByFile.set(f.name, null); continue }
+    // ponytail: una nota markdown cuenta como una sola página; partirla por encabezados si las notas crecen mucho
+    if (f.kind === 'markdown') { pagesByFile.set(f.name, [markdownText(readFileSync(join(dir, f.name), 'utf8'))]); continue }
     const pdf = await getDocumentProxy(new Uint8Array(readFileSync(join(dir, f.name))))
     pagesByFile.set(f.name, (await extractText(pdf, { mergePages: false })).text)
   }

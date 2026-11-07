@@ -1,6 +1,6 @@
 ---
 name: generar-unidad
-description: Genera el paquete JSON de lecciones de una unidad de Ovo a partir del material del usuario (PDFs e imágenes en material/<Materia>/<N>/), o reemplaza ejercicios reportados. Úsala cuando el usuario pida generar o crear lecciones/ejercicios de una unidad, o "reemplazar los reportados".
+description: Genera el paquete JSON de lecciones de una unidad de Ovo a partir del material del usuario (PDFs, imágenes y notas markdown en material/<Materia>/<N>/), o reemplaza ejercicios reportados. Úsala cuando el usuario pida generar o crear lecciones/ejercicios de una unidad, o "reemplazar los reportados".
 ---
 
 # Generar unidad (Ovo)
@@ -27,13 +27,14 @@ Lista `material/<Materia>/<N>/` y lee **cada archivo y cada página**, sin salta
   ```
   Así las citas coinciden con lo que verifica el importador. Ojo: en diapositivas con **columnas o tablas** el texto extraído mezcla columnas; **no inventes relaciones** (qué década va con qué enfoque, qué columna con qué fila). Si no se puede saber, pregúntale al usuario cómo se lee esa diapositiva, o preséntala solo como lista de elementos sin relacionarlos.
 - Imagen: Read directamente (las citas de imágenes no se pueden verificar).
+- Markdown (`.md`, p. ej. notas de Obsidian): Read directamente. Cuenta como **una sola página** (`page: 1`). El importador quita las marcas de formato (`#`, `>`, `**`, `*`, `==`, `~~`, `` ` ``, `[[enlaces]]`), así que la `quote` se copia **sin** esas marcas. Son apuntes del usuario: sí valen como material.
 
 Anota para cada dato el archivo y la página. **La página es el índice físico del PDF** (1 = primera hoja, el mismo número que usas en `pages` de Read), **no** el número impreso en la diapositiva o el pie de página.
 
 ## 3. Reglas de contenido (spec §6)
 
 1. **Todo sale solo del material.** Nada de conocimiento externo, ni "lo normal en el tema".
-2. Todo ejercicio que no sea `calculo` lleva `source`: `file` (nombre exacto del archivo, listado en `files`), `page` (índice físico, 1-based) y `quote`. En **PDF la `quote` es obligatoria**; en imágenes se puede omitir (no se verifican).
+2. Todo ejercicio que no sea `calculo` lleva `source`: `file` (nombre exacto del archivo, listado en `files`), `page` (índice físico, 1-based) y `quote`. En **PDF y markdown la `quote` es obligatoria**; en imágenes se puede omitir (no se verifican).
    - La `quote` es **la frase o fragmento de esa página que respalda la respuesta correcta / el punto clave / el par** del ejercicio, no cualquier frase del tema. Corta pero con sentido (≈ 5 a 25 palabras), copiada **exactamente** (misma ortografía y acentos).
    - El importador la busca en el texto del PDF; si no aparece queda "sin verificar" y la app lo muestra al estudiar ("cita sin verificar"). Una página sin texto seleccionable (escaneo, manuscrito) no se puede verificar: léela bien y cita con cuidado. Avisa si la cita tiene menos de 3 palabras.
    - No escribas `verified` en el paquete: lo decide solo el importador (se ignora).
@@ -75,14 +76,14 @@ La app sirve para **estudiar** ahí mismo, no solo para hacer tests. Por eso:
 3. `concepts`: uno por idea evaluada; tarjetas y ejercicios del mismo tema apuntan al mismo concepto (alimentan "lo que te cuesta").
 4. Tamaño de una **práctica**: una partida muestra **un ejercicio por grupo de variantes** (`group`; por omisión `concepto:tipo`). Apunta a **6–10 grupos distintos** (el esquema acepta 1 a 12 grupos y hasta 36 filas); si el tema da para menos, una práctica más corta está bien (el importador solo avisa). **2 a 3 variantes por grupo**, en la misma lección. Las tarjetas de estudio **no** llevan `group` (se muestran todas).
 5. **Cobertura obligatoria:** cada página con texto del material debe quedar citada (`source.page`) en **al menos una tarjeta de estudio**. El `--dry-run` avisa "cobertura: <archivo> páginas sin estudiar: …"; corrígelo agregando tarjetas. Solo se aceptan páginas sin cubrir si son portada, índice, separadores o puras referencias/URLs: explícaselo al usuario al mostrar el resumen.
-6. `files`: **todos** los archivos de la carpeta de la unidad, se citen o no, con `kind` `pdf` o `imagen` y nombres idénticos a los del disco.
+6. `files`: **todos** los archivos de la carpeta de la unidad, se citen o no, con `kind` `pdf`, `imagen` o `markdown` y nombres idénticos a los del disco.
 7. Si una lección nueva lleva `section`, todas las nuevas deben llevarla (el esquema lo exige).
 
 ## 6. Escribir, validar, importar
 
 1. Escribe el paquete en `contenido/<materia-slug>-u<N>-<AAAA-MM-DD>.json` (slug en minúsculas, sin acentos, con guiones; p. ej. `contenido/telecomunicaciones-i-u2-2026-11-04.json`). `contenido/` no se sube a GitHub.
 2. **Siempre primero** `npm run importar -- contenido/<archivo>.json --dry-run`. No escribe nada; imprime avisos (`AVISO ...`, incluida la **cobertura**) y un resumen (`Unidad N · S subsecciones · X lecciones nuevas · T tarjetas de estudio · Y ejercicios · Z citas sin verificar`).
-3. Corrige el JSON y repite hasta que no haya errores. Atiende todo aviso que indique una cita mal puesta ("la cita no aparece...", "página corregida", "sin cita textual"): arregla `quote` y `page` leyendo de nuevo la página. Deja en cero las "citas sin verificar" de PDFs.
+3. Corrige el JSON y repite hasta que no haya errores. Atiende todo aviso que indique una cita mal puesta ("la cita no aparece...", "página corregida", "sin cita textual"): arregla `quote` y `page` leyendo de nuevo la página. Deja en cero las "citas sin verificar" de PDFs y markdown.
    El resumen tiene la forma `Unidad N · X lecciones nuevas · Y ejercicios · Z citas sin verificar` (más "citas no verificables (sin texto)" si hay páginas escaneadas) y, por lección, `<título>: X ejercicios por partida (Y en total)`.
 4. **Muéstrale al usuario el resumen y los avisos y pregunta antes de importar de verdad.** Solo con su sí, ejecuta `npm run importar -- contenido/<archivo>.json`. Un mismo archivo no se importa dos veces (se detecta por hash). Si la unidad ya tiene lecciones, las nuevas se agregan al final (el importador avisa con el conteo y se niega si un título ya existe, salvo `--force`). Si falta un archivo, una `page` excede las páginas del PDF o hay otro error, no se escribe nada.
 

@@ -35,7 +35,7 @@ export type Plan = {
   errors: string[] // impiden escribir
   unit: { number: number; title: string; unitId?: string }
   newConcepts: string[] // nombres que hay que crear
-  files: { name: string; kind: 'pdf' | 'imagen'; pages: number | null }[]
+  files: { name: string; kind: 'pdf' | 'imagen' | 'markdown'; pages: number | null }[]
   lessons: PlannedLesson[]
   unverified: number // cita no encontrada en el PDF
   unverifiable: number // página sin texto (escaneo): no se puede comprobar

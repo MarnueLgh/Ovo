@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeForMatch, findQuotePage } from './quotes'
+import { normalizeForMatch, findQuotePage, markdownText } from './quotes'
 
 describe('quotes', () => {
   it('normaliza', () => expect(normalizeForMatch('Atenua-\nción  de la SEÑAL')).toBe('atenuacion de la senal'))
@@ -20,5 +20,11 @@ describe('quotes', () => {
   it('sin espacios: unpdf puede unir trozos', () => {
     expect(findQuotePage('la fibra monomodo', ['nada', 'lafibramonomodo usa luz'], 1)).toBe(2)
     expect(findQuotePage('la fibra monomodo', ['lafibramonomodo', 'la fibra monomodo'], 2)).toBe(2) // exacto antes que el fallback
+  })
+  it('markdown: la cita sin formato coincide', () => {
+    const md = '##### Convenio\n- Crea, **transfiere**, ==modifica== o *extingue* [[derechos|derechos]]\n> *NOTA:* ambos son actos jurídicos'
+    const t = markdownText(md)
+    expect(findQuotePage('Crea, transfiere, modifica o extingue derechos', [t], 1)).toBe(1)
+    expect(findQuotePage('NOTA: ambos son actos jurídicos', [t], 1)).toBe(1)
   })
 })

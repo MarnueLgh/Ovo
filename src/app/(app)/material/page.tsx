@@ -42,9 +42,9 @@ async function Material() {
                   <ul>
                     {files.map((f) => (
                       <li key={f.id}>
-                        <span aria-hidden="true">{f.kind === 'pdf' ? '📄' : '🖼️'}</span>
+                        <span aria-hidden="true">{f.kind === 'pdf' ? '📄' : f.kind === 'markdown' ? '📝' : '🖼️'}</span>
                         <span className="fname">{f.name}</span>
-                        <small>{f.pages ? plural(f.pages, 'página', 'páginas') : 'imagen'}</small>
+                        <small>{f.kind === 'markdown' ? 'nota' : f.pages ? plural(f.pages, 'página', 'páginas') : 'imagen'}</small>
                       </li>
                     ))}
                   </ul>

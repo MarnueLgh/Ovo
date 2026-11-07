@@ -109,9 +109,9 @@ async function Camino({ params }: { params: Promise<{ subjectId: string }> }) {
               <ul className="flist">
                 {unitFiles.map((f) => (
                   <li key={f.name}>
-                    <span aria-hidden="true">{f.kind === 'pdf' ? '📄' : '🖼️'}</span>
+                    <span aria-hidden="true">{f.kind === 'pdf' ? '📄' : f.kind === 'markdown' ? '📝' : '🖼️'}</span>
                     <span className="fname">{f.name}</span>
-                    {f.pages ? <small>{f.pages} p.</small> : null}
+                    {f.pages && f.kind !== 'markdown' ? <small>{f.pages} p.</small> : null}
                   </li>
                 ))}
               </ul>

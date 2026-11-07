@@ -75,7 +75,7 @@ export const files = pgTable('files', {
   id: id(),
   unitId: uuid('unit_id').notNull().references(() => units.id),
   name: text('name').notNull(),
-  kind: text('kind').notNull(), // 'pdf' | 'imagen'
+  kind: text('kind').notNull(), // 'pdf' | 'imagen' | 'markdown'
   pages: integer('pages'),
 }, (t) => [unique().on(t.unitId, t.name)]).enableRLS()
 

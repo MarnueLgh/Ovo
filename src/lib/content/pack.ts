@@ -39,7 +39,7 @@ export const PackSchema = z
   .object({
     subject: z.string().min(1),
     unit: z.object({ number: z.number().int().min(1), title: z.string() }),
-    files: z.array(z.object({ name: z.string(), kind: z.enum(['pdf', 'imagen']) })),
+    files: z.array(z.object({ name: z.string(), kind: z.enum(['pdf', 'imagen', 'markdown']) })),
     concepts: z.array(z.object({ key: z.string(), name: z.string() })),
     lessons: z.array(Lesson).min(1),
   })
@@ -73,8 +73,8 @@ export const PackSchema = z
         if (e.kind !== 'calculo' && !e.source) issue([...at, 'source'], 'Falta source')
         if (e.source && !files.has(e.source.file))
           issue([...at, 'source', 'file'], `Archivo no listado en files: ${e.source.file}`)
-        else if (e.source && files.get(e.source.file) === 'pdf' && !e.source.quote?.trim())
-          issue([...at, 'source', 'quote'], 'Las fuentes de un PDF requieren quote (cita literal de la página)')
+        else if (e.source && files.get(e.source.file) !== 'imagen' && !e.source.quote?.trim())
+          issue([...at, 'source', 'quote'], 'Las fuentes de un PDF o markdown requieren quote (cita literal)')
       })
     })
   })
